@@ -59,3 +59,85 @@ $app->get('/user/{uid}/projects/[{pid}]', function($request, $response, $args){
 
     return $response;
 });
+
+$app->post('/user', function($request, $response, $args){
+    $json = $request->getBody();
+    $data = json_decode($json, true);
+
+    $db = getDBConnection();
+    $insert = $db->prepare('INSERT INTO users (email) VALUES (:email)');
+    $insert->bindParam(':email', $data['email']);
+
+    $db->beginTransaction();
+
+    $success = $insert->execute();
+    if($success){
+        $db->commit();
+    } else {
+        $db->rollBack();
+    }
+
+	$db = null;
+});
+
+$app->post('/user/{uid}/projects', function($request, $response, $args){
+    $json = $request->getBody();
+    $data = json_decode($json, true);
+
+    $db = getDBConnection();
+    $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :description)');
+    $insert->bindParam(':uid', $args['uid']);
+    $insert->bindParam(':pid', $data['pid']);
+    $insert->bindParam(':name', $data['name']);
+    $insert->bindParam(':weekload', $data['weekload']);
+    $insert->bindParam(':maxhours', $data['maxhours']);
+    $insert->bindParam(':rangestart', $data['rangestart']);
+    $insert->bindParam(':rangeend', $data['rangeend']);
+    $insert->bindParam(':description', $data['description']);
+
+    $db->beginTransaction();
+
+    $success = $insert->execute();
+    if($success){
+        $db->commit();
+    } else {
+        $db->rollBack();
+    }
+
+    $db = null;
+});
+
+$app->put('/user/{uid}/projects',function($request, $response, $args){
+    $json = $request->getBody();
+    $data = json_decode($json, true);
+
+    $db = getDBConnection();
+    $update = $db->prepare('UPDATE projects SET pid=?, name=?, weekload=?, maxhours=?, rangestart=?, rangeend=?, description=? WHERE uid=? AND pid=?');
+    $update->bindParam(':uid', $args['uid']);
+    $update->bindParam(':pid', $data['pid']);
+
+    $db->beginTransaction();
+
+    $success = $update->execute(array($data['pid'],$data['name'],$data['weekload'],$data['maxhours'],$data['rangestart'],$data['rangeend'],$data['description'],$args['uid'],$data['pid']));
+    if($success){
+        $db->commit();
+    } else {
+        $db->rollBack();
+    }
+
+    $db = null;
+});
+
+$app->delete('/user/{uid}/projects/{pid}', function($request, $response, $args){
+    $db = getDBConnection();
+    $delete = $db->prepare('DELETE FROM projects WHERE uid=? AND pid=?');
+    $db->beginTransaction();
+    $success = $delete->execute(array($args['uid'], $args['pid']));
+    if($success){
+        $db->commit();
+    } else {
+        $db->rollBack();
+    }
+
+    $db = null;
+});
