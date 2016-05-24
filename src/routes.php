@@ -24,9 +24,9 @@ function getDBConnection(){
  * @param $response
  * @param $args
  *
- * @returns response to display
+ * @returns {json}
  */
-$app->get('/user/{uid}/projects/[{pid}]', function($request, $response, $args){
+$app->get('/user/{uid}/projects[/{pid}]', function($request, $response, $args){
     $db = getDBConnection();
     $selection = $db->prepare('SELECT * FROM users WHERE uid = ?');
     $selection->execute(array($args['uid']));
@@ -37,22 +37,16 @@ $app->get('/user/{uid}/projects/[{pid}]', function($request, $response, $args){
             $selection = $db->prepare('SELECT * FROM projects WHERE uid = ?');
             $selection->execute(array($user['uid']));
             $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($projects as $index => $project) {
 
-                /**
-                 * TODO: Action for all projects
-                 */
-                print_r($project);
-            }
+            $response = $response->withHeader('Content-Type', 'application/json');
+            $response = $response->withJson($projects);
         } else {
             $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
             $selection->execute(array($user['uid'], $args['pid']));
             $project = $selection->fetch(PDO::FETCH_ASSOC);
 
-            /**
-             * TODO: Action for one project
-             */
-            print_r($project);
+            $response = $response->withHeader('Content-Type', 'application/json');
+            $response = $response->withJson($project);
         }
     } else {
         $response = $response->withStatus(404)
