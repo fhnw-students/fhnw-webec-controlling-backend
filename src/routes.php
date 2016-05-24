@@ -3,7 +3,7 @@
 
 
 /**
- * Eröffnet eine Datenbankverbindung
+ * open database connection to the MySQL server
  */
 function getDBConnection(){
     $user = 'wtecch_fhnwWebec';
@@ -16,18 +16,15 @@ function getDBConnection(){
     }
 }
 
-/*
-$app->get('/[{name}]', function ($request, $response, $args) {
-    // Sample log message
-    $this->logger->info("Slim-Skeleton '/' route");
-
-    // Render index view
-    return $this->renderer->render($response, 'index.phtml', $args);
-});
-*/
 
 /**
- * Projektdetails eines Benutzers aus der Datenbank auslesen
+ * get details of one or all projects from an user
+ *
+ * @param $request
+ * @param $response
+ * @param $args
+ *
+ * @returns response to display
  */
 $app->get('/user/{uid}/projects/[{pid}]', function($request, $response, $args){
     $db = getDBConnection();
@@ -41,12 +38,20 @@ $app->get('/user/{uid}/projects/[{pid}]', function($request, $response, $args){
             $selection->execute(array($user['uid']));
             $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
             foreach ($projects as $index => $project) {
+
+                /**
+                 * TODO: Action for all projects
+                 */
                 print_r($project);
             }
         } else {
             $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
             $selection->execute(array($user['uid'], $args['pid']));
             $project = $selection->fetch(PDO::FETCH_ASSOC);
+
+            /**
+             * TODO: Action for one project
+             */
             print_r($project);
         }
     } else {
@@ -60,6 +65,14 @@ $app->get('/user/{uid}/projects/[{pid}]', function($request, $response, $args){
     return $response;
 });
 
+
+/**
+ * insert a new user
+ *
+ * @param $request
+ * @param $response
+ * @param $args
+ */
 $app->post('/user', function($request, $response, $args){
     $json = $request->getBody();
     $data = json_decode($json, true);
@@ -80,6 +93,14 @@ $app->post('/user', function($request, $response, $args){
 	$db = null;
 });
 
+
+/**
+ * insert a new project for an user
+ *
+ * @param $request
+ * @param $response
+ * @param $args
+ */
 $app->post('/user/{uid}/projects', function($request, $response, $args){
     $json = $request->getBody();
     $data = json_decode($json, true);
@@ -107,6 +128,14 @@ $app->post('/user/{uid}/projects', function($request, $response, $args){
     $db = null;
 });
 
+
+/**
+ * update information of a project
+ *
+ * @param $request
+ * @param $response
+ * @param $args
+ */
 $app->put('/user/{uid}/projects',function($request, $response, $args){
     $json = $request->getBody();
     $data = json_decode($json, true);
@@ -128,6 +157,14 @@ $app->put('/user/{uid}/projects',function($request, $response, $args){
     $db = null;
 });
 
+
+/**
+ * delete a project from an user
+ *
+ * @param $request
+ * @param $response
+ * @param $args
+ */
 $app->delete('/user/{uid}/projects/{pid}', function($request, $response, $args){
     $db = getDBConnection();
     $delete = $db->prepare('DELETE FROM projects WHERE uid=? AND pid=?');
