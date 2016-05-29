@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This is the default jira backend uri
  */
@@ -12,14 +11,14 @@ define('JIRA_ROUTE', '/api/2');
  * Route to the jira plugin tempo
  */
 define('TEMPO_ROUTE', '/tempo-timesheets/3/worklogs');
-
-// Routes
+/**
+ * Routes
+ */
 $app->get('/', sayHello);
 $app->post('/login', login);
-
 $app->get('/all/projects', getAllProjects);
 $app->get('/projects[/{pid}]', getProjects);
-//$app->post('/user/{uid}/projects', createProject);
+//$app->post('/projects', createProject);
 //$app->put('/user/{uid}/projects', updateProject);
 //$app->delete('/user/{uid}/projects/{pid}', deleteProject);
 
@@ -54,6 +53,14 @@ function badRequest($response) {
  */
 function unauthorized($response) {
   return $response->withStatus(401)->withHeader('Content-Type', 'text/html')->write('Unauthorized');
+}
+
+/**
+ * @param $request
+ * @return mixed
+ */
+function getJsonBody($request) {
+  return json_decode($request->getBody(), true);
 }
 
 /**
@@ -176,38 +183,175 @@ function getProjects($request, $response, $args) {
     $user = getUserByEmail($cred['username']);
     if ($user) {
       //Gets all jira projects of the user
-      $uri = BASE_URL . JIRA_ROUTE . '/project';
-      if ($args['pid']) {
-        $uri = $uri . '/' . $args['pid'];
-      }
-      $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+      $httpResponse = getAllJiraProjects($args['pid'], $cred);
       $jiraProjects = $httpResponse->body;
       // Gets all stored projects in our database
-      $db = getDBConnection();
       if ($args['pid']) {
-        $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
-        $selection->execute(array($user['uid'], $args['pid']));
+        $projects = getProjectById($args['pid'], $user);
       } else {
-        $selection = $db->prepare('SELECT * FROM projects WHERE uid = ?');
-        $selection->execute(array($user['uid']));
+        $projects = getProjectsFromUser($user);
       }
-      $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
-      $db = null;
-      // Concats the jira and our project information
-      if ($args['pid']) {
-        $output = array('config' => $projects[0], 'jira' => $jiraProjects);
-      } else {
-        $output = array();
-        for ($i = 0; $i < count($projects); $i++) {
-          $jiraProject = null;
-          for ($j = 0; $j < count($jiraProjects); $j++) {
-            if ($projects[$i]['pid'] == $jiraProjects[$j]->key) {
-              $jiraProject = $jiraProjects[$j];
-            }
-          }
-          array_push($output, array('config' => $projects[$i], 'jira' => $jiraProject));
+      $output = concatJiraAndOurProjects($jiraProjects, $projects, $args['pid']);
+      return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($output);
+    } else {
+      $response = unauthorized($response);
+    }
+  } else {
+    $response = badRequest($response);
+  }
+  return $response;
+}
+
+/**
+ * Concats the jira and our project information
+ * @param $jiraProjects
+ * @param $projects
+ * @param $key
+ * @return array
+ */
+function concatJiraAndOurProjects($jiraProjects, $projects, $key) {
+  if ($key) {
+    return array('config' => $projects, 'jira' => $jiraProjects);
+  } else {
+    $output = array();
+    for ($i = 0; $i < count($projects); $i++) {
+      $jiraProject = null;
+      for ($j = 0; $j < count($jiraProjects); $j++) {
+        if ($projects[$i]['pid'] == $jiraProjects[$j]->key) {
+          $jiraProject = $jiraProjects[$j];
         }
       }
+      array_push($output, array('config' => $projects[$i], 'jira' => $jiraProject));
+    }
+  }
+  return $output;
+}
+
+/**
+ * @param $key
+ * @param $cred
+ * @return \Httpful\Response
+ */
+function getAllJiraProjects($key, $cred) {
+  //Gets all jira projects of the user
+  $uri = BASE_URL . JIRA_ROUTE . '/project';
+  if ($key) {
+    $uri = $uri . '/' . $key;
+  }
+  $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+  return $httpResponse;
+}
+
+/**
+ * @param $key
+ * @param $user
+ * @return mixed
+ */
+function getProjectById($key, $user) {
+  $db = getDBConnection();
+  $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
+  $selection->execute(array($user['uid'], $key));
+  $project = $selection->fetchAll(PDO::FETCH_ASSOC);
+  $db = null;
+  return $project[0];
+}
+
+/*
+ * @param $user
+ * @return mixed
+ */
+function getProjectsFromUser($user) {
+  $db = getDBConnection();
+  $selection = $db->prepare('SELECT * FROM projects WHERE uid = ?');
+  $selection->execute(array($user['uid']));
+  $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
+  $db = null;
+  return $projects;
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @return mixed
+ */
+function createProject($request, $response) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    $data = getJsonBody($request);
+    if ($user) {
+      // TODO check if the pid exitst in the jira database
+      $db = getDBConnection();
+      $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :description)');
+      $insert->bindParam(':uid', $user['uid']);
+      $insert->bindParam(':pid', $data['pid']);
+      $insert->bindParam(':name', $data['name']);
+      $insert->bindParam(':weekload', $data['weekload']);
+      $insert->bindParam(':maxhours', $data['maxhours']);
+      $insert->bindParam(':rangestart', $data['rangestart']);
+      $insert->bindParam(':rangeend', $data['rangeend']);
+      $insert->bindParam(':description', $data['description']);
+      $db->beginTransaction();
+      $success = $insert->execute();
+      if ($success) {
+        $db->commit();
+      } else {
+        $db->rollBack();
+      }
+      $db = null;
+
+      if ($success) {
+        $project = getProjectById($data['pid'], $user);
+        $jira = getAllJiraProjects($data['pid'], $cred);
+        $output = concatJiraAndOurProjects($jira, $project, $data['pid']);
+        return $response->withStatus(201)->withHeader('Content-Type', 'application/json')->withJson($output);
+      } else {
+        return badRequest($response);
+      }
+    } else {
+      $response = unauthorized($response);
+    }
+  } else {
+    $response = badRequest($response);
+  }
+  return $response;
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @param $args
+ * @return mixed
+ */
+function updateProject($request, $response, $args) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    $data = getJsonBody($request);
+    if ($user) {
+      $output;
+      return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($output);
+    } else {
+      $response = unauthorized($response);
+    }
+  } else {
+    $response = badRequest($response);
+  }
+  return $response;
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @param $args
+ * @return mixed
+ */
+function destroyProject($request, $response, $args) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $output;
       return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($output);
     } else {
       $response = unauthorized($response);
@@ -221,46 +365,6 @@ function getProjects($request, $response, $args) {
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
-/**
- * get details of one or all projects from an user
- *
- * @param $request
- * @param $response
- * @param $args
- *
- * @returns {json}
- */
-//function getProjectByUser($request, $response, $args) {
-//  $db = getDBConnection();
-//  $selection = $db->prepare('SELECT * FROM users WHERE uid = ?');
-//  $selection->execute(array($args['uid']));
-//  $user = $selection->fetch(PDO::FETCH_ASSOC);
-//
-//  if ($user != null) {
-//    if ($args['pid'] == null) {
-//      $selection = $db->prepare('SELECT * FROM projects WHERE uid = ?');
-//      $selection->execute(array($user['uid']));
-//      $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
-//
-//      $response = $response->withHeader('Content-Type', 'application/json');
-//      $response = $response->withJson($projects);
-//    } else {
-//      $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
-//      $selection->execute(array($user['uid'], $args['pid']));
-//      $project = $selection->fetch(PDO::FETCH_ASSOC);
-//
-//      $response = $response->withHeader('Content-Type', 'application/json');
-//      $response = $response->withJson($project);
-//    }
-//  } else {
-//    $response = $response->withStatus(404)->withHeader('Content-Type', 'text/html')->write('Page not found');
-//  }
-//
-//  $db = null;
-//
-//  return $response;
-//}
-
 /**
  * insert a new project for an user
  *
