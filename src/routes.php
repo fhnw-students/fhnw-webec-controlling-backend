@@ -19,8 +19,8 @@ $app->post('/login', login);
 $app->get('/all/projects', getAllProjects);
 $app->get('/projects[/{pid}]', getProjects);
 //$app->post('/projects', createProject);
-//$app->put('/user/{uid}/projects', updateProject);
-//$app->delete('/user/{uid}/projects/{pid}', deleteProject);
+//$app->put('/projects[/{pid}]', updateProject);
+//$app->delete('/projects[/{pid}]', deleteProject);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 /**
