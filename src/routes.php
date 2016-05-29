@@ -18,10 +18,7 @@ $app->get('/', sayHello);
 $app->post('/login', login);
 
 $app->get('/all/projects', getAllProjects);
-//$app->get('/projects[/{pid}]', getProjects);
-
-//$app->get('/user/{uid}/projects[/{pid}]', getProjectByUser);
-//$app->get('/user/{uid}/projects[/{pid}]', getProjectByUser);
+$app->get('/projects[/{pid}]', getProjects);
 //$app->post('/user/{uid}/projects', createProject);
 //$app->put('/user/{uid}/projects', updateProject);
 //$app->delete('/user/{uid}/projects/{pid}', deleteProject);
@@ -48,6 +45,15 @@ function getDBConnection() {
  */
 function badRequest($response) {
   return $response->withStatus(400)->withHeader('Content-Type', 'text/html')->write('Bad Request');
+}
+
+/**
+ * Builds a unauthorized 401 response
+ * @param $response
+ * @return mixed
+ */
+function unauthorized($response) {
+  return $response->withStatus(401)->withHeader('Content-Type', 'text/html')->write('Unauthorized');
 }
 
 /**
@@ -145,9 +151,67 @@ function sayHello() {
 function getAllProjects($request, $response) {
   if ($request->hasHeader('Authorization')) {
     $cred = decodeUserCredentials($request);
-    $uri = BASE_URL . JIRA_ROUTE . '/project';
-    $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
-    $response = buildResponseFromJira($response, $httpResponse);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $uri = BASE_URL . JIRA_ROUTE . '/project';
+      $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+      $response = buildResponseFromJira($response, $httpResponse);
+    } else {
+      $response = unauthorized($response);
+    }
+  } else {
+    $response = badRequest($response);
+  }
+  return $response;
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @return mixed
+ */
+function getProjects($request, $response, $args) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      //Gets all jira projects of the user
+      $uri = BASE_URL . JIRA_ROUTE . '/project';
+      if ($args['pid']) {
+        $uri = $uri . '/' . $args['pid'];
+      }
+      $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+      $jiraProjects = $httpResponse->body;
+      // Gets all stored projects in our database
+      $db = getDBConnection();
+      if ($args['pid']) {
+        $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
+        $selection->execute(array($user['uid'], $args['pid']));
+      } else {
+        $selection = $db->prepare('SELECT * FROM projects WHERE uid = ?');
+        $selection->execute(array($user['uid']));
+      }
+      $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
+      $db = null;
+      // Concats the jira and our project information
+      if ($args['pid']) {
+        $output = array('config' => $projects[0], 'jira' => $jiraProjects);
+      } else {
+        $output = array();
+        for ($i = 0; $i < count($projects); $i++) {
+          $jiraProject = null;
+          for ($j = 0; $j < count($jiraProjects); $j++) {
+            if ($projects[$i]['pid'] == $jiraProjects[$j]->key) {
+              $jiraProject = $jiraProjects[$j];
+            }
+          }
+          array_push($output, array('config' => $projects[$i], 'jira' => $jiraProject));
+        }
+      }
+      return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($output);
+    } else {
+      $response = unauthorized($response);
+    }
   } else {
     $response = badRequest($response);
   }
