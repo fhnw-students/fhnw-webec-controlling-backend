@@ -21,6 +21,7 @@ $app->get('/projects[/{pid}]', getProjects);
 $app->post('/projects', createProject);
 //$app->put('/projects[/{pid}]', updateProject);
 //$app->delete('/projects[/{pid}]', destroyProject);
+$app->get('/projects/{pid}/worklogs', getWorklogs);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 /**
@@ -364,6 +365,33 @@ function destroyProject($request, $response, $args) {
 
       } else {
         return buildResponseFromJira($response, $jiraHttpResponse);
+      }
+    } else {
+      return unauthorized($response);
+    }
+  } else {
+    return badRequest($response);
+  }
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @param $args
+ * @return mixed
+ */
+function getWorklogs($request, $response, $args) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $params = $request->getQueryParams();
+      if ($params['dateFrom'] && $params['dateTo']) {
+        $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $args['pid'] . '&dateFrom=' . $params['dateFrom'] . '&dateTo=' . $params['dateTo'];
+        $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+        return buildResponseFromJira($response, $httpResponse);
+      } else {
+        return badRequest($response);
       }
     } else {
       return unauthorized($response);
