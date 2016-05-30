@@ -22,6 +22,7 @@ $app->post('/projects', createProjectRoute);
 //$app->put('/projects[/{pid}]', updateProject);
 //$app->delete('/projects[/{pid}]', destroyProject);
 $app->get('/projects/{pid}/worklogs', getWorklogsRoute);
+$app->get('/projects/{pid}/members', getProjectMemberRoute);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Routes
@@ -242,6 +243,29 @@ function getWorklogsRoute($request, $response, $args) {
   }
 }
 
+/**
+ * @param $request
+ * @param $response
+ * @param $args
+ * @return mixed
+ */
+function getProjectMemberRoute($request, $response, $args){
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $project = getProjectById($args['pid'], $user);
+      $httpResponse = getWorklogs($args['pid'], $project['rangestart'], $project['rangeend'], $cred);
+      $result = getProjectMembers($httpResponse->body);
+      return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($result);
+    } else {
+      return unauthorized($response);
+    }
+  } else {
+    return badRequest($response);
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Helpers
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -413,6 +437,22 @@ function getProjectsFromUser($user) {
 function getWorklogs($key, $dateFrom, $dateTo, $cred) {
   $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $key . '&dateFrom=' . $dateFrom . '&dateTo=' . $dateTo;
   return \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+}
+
+/**
+ * @param $worklogs
+ * @return array
+ */
+function getProjectMembers($worklogs){
+  $mapFunction = function($item){
+    return $item->author;
+  };
+  $members = array_map($mapFunction, $worklogs);
+  $result = array();
+  for ($i=0; $i<count($members); $i++){
+    $result[$members[$i]->name] = $members[$i];
+  }
+  return $result;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
