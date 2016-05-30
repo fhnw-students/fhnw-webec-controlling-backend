@@ -25,6 +25,7 @@ $app->get('/projects/{pid}/worklogs', getWorklogsRoute);
 $app->get('/projects/{pid}/members', getProjectMemberRoute);
 $app->get('/projects/{pid}/resources/graph', getProjectResourcesGraphRoute);
 $app->get('/projects/{pid}/efficiency/graph', getProjectEfficiencyGraphRoute);
+$app->get('/projects/{pid}/team/graph', getProjectTeamGraphRoute);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Routes
@@ -398,6 +399,62 @@ function getProjectEfficiencyGraphRoute($request, $response, $args) {
   }
 }
 
+/**
+ * @param $request
+ * @param $response
+ * @param $args
+ * @return mixed
+ */
+function getProjectTeamGraphRoute($request, $response, $args) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $project = getProjectById($args['pid'], $user);
+      $httpResponse = getWorklogs($args['pid'], $project['rangestart'], $project['rangeend'], $cred);
+      $worklogs = $httpResponse->body;
+      $worklogs = parseWeeklogs($worklogs);
+      $labels = getWeekLabel($worklogs);
+      $datasets = array();
+      $dataPlaned = array();
+      $dataReal = array();
+      for ($w = 0; $w < count($labels); $w++) {
+        $dataPlaned[$w] = intval($project['weekload']);
+        if ($w > 0) {
+          $dataPlaned[$w] = $dataPlaned[$w] + $dataPlaned[$w - 1];
+        }
+        $dataReal[$w] = 0;
+      }
+
+      for ($i = 0; $i < count($worklogs); $i++) {
+        $key = $worklogs[$i]['week'] . '/' . $worklogs[$i]['year'];
+        $index = array_search($key, $labels);
+        $dataReal[$index] = $dataReal[$index] + $worklogs[$i]['timeSpentSeconds'];
+      }
+
+      for ($n = 1; $n < count($labels); $n++) {
+        $dataReal[$n] = $dataReal[$n] + $dataReal[$n - 1];
+      }
+
+      for ($n = 0; $n < count($labels); $n++) {
+        $dataReal[$n] = $dataReal[$n] / 3600;
+        $dataReal[$n] = intval($dataReal[$n]);
+      }
+
+      array_push($datasets, array('label' => 'Planed', 'data' => $dataPlaned));
+      array_push($datasets, array('label' => 'Real', 'data' => $dataReal));
+
+      $result = array('labels' => $labels, 'datasets' => $datasets);
+
+      return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($result);
+    } else {
+      return unauthorized($response);
+    }
+  } else {
+    return badRequest($response);
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Helpers
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -587,7 +644,7 @@ function getProjectMembers($worklogs) {
   return $result;
 }
 
-function parseWeeklogs($worklogs){
+function parseWeeklogs($worklogs) {
   $mapFunctionWorklog = function ($log) {
     $date = new DateTime($log->dateStarted);
     return array('id' => $log->id, 'timeSpentSeconds' => $log->timeSpentSeconds, 'dateStarted' => $log->dateStarted, 'displayName' => $log->author->displayName, 'name' => $log->author->name, 'year' => $date->format('Y'), 'week' => $date->format('W'));
@@ -595,7 +652,7 @@ function parseWeeklogs($worklogs){
   return array_map($mapFunctionWorklog, $worklogs);
 }
 
-function getWeekLabel($worklogs){
+function getWeekLabel($worklogs) {
   $mapFunctionWeeks = function ($item) {
     return $item['week'] . '/' . $item['year'];
   };
