@@ -227,8 +227,7 @@ function getWorklogsRoute($request, $response, $args) {
     if ($user) {
       $params = $request->getQueryParams();
       if ($params['dateFrom'] && $params['dateTo']) {
-        $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $args['pid'] . '&dateFrom=' . $params['dateFrom'] . '&dateTo=' . $params['dateTo'];
-        $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+        $httpResponse = getWorklogs($args['pid'], $params['dateFrom'], $params['dateTo'], $cred);
         return buildResponseFromJira($response, $httpResponse);
       } else {
         return badRequest($response);
@@ -401,6 +400,17 @@ function getProjectsFromUser($user) {
   $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
   $db = null;
   return $projects;
+}
+
+/**
+ * @param $key
+ * @param $dateFrom
+ * @param $dateTo
+ * @return \Httpful\Response
+ */
+function getWorklogs($key, $dateFrom, $dateTo, $cred){
+  $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $key . '&dateFrom=' . $dateFrom . '&dateTo=' . $dateTo;
+  return \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
