@@ -20,7 +20,7 @@ $app->get('/all/projects', getAllProjects);
 $app->get('/projects[/{pid}]', getProjects);
 $app->post('/projects', createProject);
 //$app->put('/projects[/{pid}]', updateProject);
-//$app->delete('/projects[/{pid}]', deleteProject);
+//$app->delete('/projects[/{pid}]', destroyProject);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 /**
