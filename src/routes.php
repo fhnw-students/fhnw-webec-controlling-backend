@@ -331,15 +331,20 @@ function updateProject($request, $response, $args) {
     $user = getUserByEmail($cred['username']);
     $data = getJsonBody($request);
     if ($user) {
-      $output;
-      return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($output);
+      $jiraHttpResponse = getAllJiraProjects($args['pid'], $cred);
+      if ($jiraHttpResponse->code == 200) {
+        // TODO update project in our database and return the jira project and our information like in the GET request (old code is at the bottom)
+
+
+      } else {
+        return buildResponseFromJira($response, $jiraHttpResponse);
+      }
     } else {
-      $response = unauthorized($response);
+      return unauthorized($response);
     }
   } else {
-    $response = badRequest($response);
+    return badRequest($response);
   }
-  return $response;
 }
 
 /**
@@ -353,54 +358,24 @@ function destroyProject($request, $response, $args) {
     $cred = decodeUserCredentials($request);
     $user = getUserByEmail($cred['username']);
     if ($user) {
-      $output;
-      return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($output);
+      $jiraHttpResponse = getAllJiraProjects($args['pid'], $cred);
+      if ($jiraHttpResponse->code == 200) {
+        // TODO delete project in our database (old code is at the bottom)
+
+      } else {
+        return buildResponseFromJira($response, $jiraHttpResponse);
+      }
     } else {
-      $response = unauthorized($response);
+      return unauthorized($response);
     }
   } else {
-    $response = badRequest($response);
+    return badRequest($response);
   }
-  return $response;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
-/**
- * insert a new project for an user
- *
- * @param $request
- * @param $response
- * @param $args
- */
-//function createProject($request, $response, $args) {
-//  $json = $request->getBody();
-//  $data = json_decode($json, true);
-//
-//  $db = getDBConnection();
-//  $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :description)');
-//  $insert->bindParam(':uid', $args['uid']);
-//  $insert->bindParam(':pid', $data['pid']);
-//  $insert->bindParam(':name', $data['name']);
-//  $insert->bindParam(':weekload', $data['weekload']);
-//  $insert->bindParam(':maxhours', $data['maxhours']);
-//  $insert->bindParam(':rangestart', $data['rangestart']);
-//  $insert->bindParam(':rangeend', $data['rangeend']);
-//  $insert->bindParam(':description', $data['description']);
-//
-//  $db->beginTransaction();
-//
-//  $success = $insert->execute();
-//  if ($success) {
-//    $db->commit();
-//  } else {
-//    $db->rollBack();
-//  }
-//
-//  $db = null;
-//}
-
 /**
  * update information of a project
  *
