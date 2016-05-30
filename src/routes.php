@@ -18,7 +18,7 @@ $app->get('/', sayHello);
 $app->post('/login', login);
 $app->get('/all/projects', getAllProjects);
 $app->get('/projects[/{pid}]', getProjects);
-//$app->post('/projects', createProject);
+$app->post('/projects', createProject);
 //$app->put('/projects[/{pid}]', updateProject);
 //$app->delete('/projects[/{pid}]', deleteProject);
 
@@ -280,41 +280,43 @@ function createProject($request, $response) {
     $user = getUserByEmail($cred['username']);
     $data = getJsonBody($request);
     if ($user) {
-      // TODO check if the pid exitst in the jira database
-      $db = getDBConnection();
-      $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :description)');
-      $insert->bindParam(':uid', $user['uid']);
-      $insert->bindParam(':pid', $data['pid']);
-      $insert->bindParam(':name', $data['name']);
-      $insert->bindParam(':weekload', $data['weekload']);
-      $insert->bindParam(':maxhours', $data['maxhours']);
-      $insert->bindParam(':rangestart', $data['rangestart']);
-      $insert->bindParam(':rangeend', $data['rangeend']);
-      $insert->bindParam(':description', $data['description']);
-      $db->beginTransaction();
-      $success = $insert->execute();
-      if ($success) {
-        $db->commit();
+      $jiraHttpResponse = getAllJiraProjects($data['pid'], $cred);
+      if ($jiraHttpResponse->code == 200) {
+        $jiraProject = $jiraHttpResponse->body;
+        // Create project in the database
+        $db = getDBConnection();
+        $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :description)');
+        $insert->bindParam(':uid', $user['uid']);
+        $insert->bindParam(':pid', $data['pid']);
+        $insert->bindParam(':name', $data['name']);
+        $insert->bindParam(':weekload', $data['weekload']);
+        $insert->bindParam(':maxhours', $data['maxhours']);
+        $insert->bindParam(':rangestart', $data['rangestart']);
+        $insert->bindParam(':rangeend', $data['rangeend']);
+        $insert->bindParam(':description', $data['description']);
+        $db->beginTransaction();
+        $success = $insert->execute();
+        // Creation was successful
+        if ($success) {
+          $db->commit();
+          $db = null;
+          $project = getProjectById($data['pid'], $user);
+          $output = concatJiraAndOurProjects($jiraProject, $project, $data['pid']);
+          return $response->withStatus(201)->withHeader('Content-Type', 'application/json')->withJson($output);
+        } else {
+          $db->rollBack();
+          $db = null;
+          return badRequest($response);
+        }
       } else {
-        $db->rollBack();
-      }
-      $db = null;
-
-      if ($success) {
-        $project = getProjectById($data['pid'], $user);
-        $jira = getAllJiraProjects($data['pid'], $cred);
-        $output = concatJiraAndOurProjects($jira, $project, $data['pid']);
-        return $response->withStatus(201)->withHeader('Content-Type', 'application/json')->withJson($output);
-      } else {
-        return badRequest($response);
+        return buildResponseFromJira($response, $jiraHttpResponse);
       }
     } else {
-      $response = unauthorized($response);
+      return unauthorized($response);
     }
   } else {
-    $response = badRequest($response);
+    return badRequest($response);
   }
-  return $response;
 }
 
 /**
