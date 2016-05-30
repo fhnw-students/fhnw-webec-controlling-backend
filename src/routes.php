@@ -68,8 +68,7 @@ function getAllProjectsRoute($request, $response) {
     $cred = decodeUserCredentials($request);
     $user = getUserByEmail($cred['username']);
     if ($user) {
-      $uri = BASE_URL . JIRA_ROUTE . '/project';
-      $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+      $httpResponse = requestJiraProjects($cred);
       $response = buildResponseFromJira($response, $httpResponse);
     } else {
       $response = unauthorized($response);
@@ -91,22 +90,26 @@ function getProjectsRoute($request, $response, $args) {
     $user = getUserByEmail($cred['username']);
     if ($user) {
       //Gets all jira projects of the user
-      $httpResponse = requestAllJiraProjects($args['pid'], $cred);
-      $jiraProjects = $httpResponse->body;
-      // Gets all stored projects in our database
-      if ($args['pid']) {
-        $projects = getProjectById($args['pid'], $user);
+      $httpResponse = requestJiraProjects($cred, $args['pid']);
+      if ($httpResponse->code === 200) {
+        // Gets all stored projects in our database
+        if ($args['pid']) {
+          $projects = getProjectById($args['pid'], $user);
+        } else {
+          $projects = getProjectsFromUser($user);
+        }
+        echo 'asdfsadf';
+        $output = concatJiraAndOurProjects($httpResponse->body, $projects, $args['pid']);
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($output);
       } else {
-        $projects = getProjectsFromUser($user);
+        return buildResponseFromJira($response, $httpResponse);
       }
-      $output = concatJiraAndOurProjects($jiraProjects, $projects, $args['pid']);
-      return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($output);
     } else {
-      $response = unauthorized($response);
-    }
+      return unauthorized($response);
+    } // user check
   } else {
-    $response = badRequest($response);
-  }
+    return badRequest($response);
+  } // header check
   return $response;
 }
 
@@ -121,7 +124,7 @@ function createProjectRoute($request, $response) {
     $user = getUserByEmail($cred['username']);
     $data = getJsonBody($request);
     if ($user) {
-      $jiraHttpResponse = requestAllJiraProjects($data['pid'], $cred);
+      $jiraHttpResponse = requestJiraProjects($data['pid'], $cred);
       if ($jiraHttpResponse->code == 200) {
         $jiraProject = $jiraHttpResponse->body;
         // Create project in the database
@@ -172,7 +175,7 @@ function updateProjectRoute($request, $response, $args) {
     $user = getUserByEmail($cred['username']);
     $data = getJsonBody($request);
     if ($user) {
-      $jiraHttpResponse = requestAllJiraProjects($args['pid'], $cred);
+      $jiraHttpResponse = requestJiraProjects($args['pid'], $cred);
       if ($jiraHttpResponse->code == 200) {
         // TODO update project in our database and return the jira project and our information like in the GET request (old code is at the bottom)
 
@@ -199,7 +202,7 @@ function destroyProjectRoute($request, $response, $args) {
     $cred = decodeUserCredentials($request);
     $user = getUserByEmail($cred['username']);
     if ($user) {
-      $jiraHttpResponse = requestAllJiraProjects($args['pid'], $cred);
+      $jiraHttpResponse = requestJiraProjects($args['pid'], $cred);
       if ($jiraHttpResponse->code == 200) {
         // TODO delete project in our database (old code is at the bottom)
 
@@ -365,7 +368,7 @@ function concatJiraAndOurProjects($jiraProjects, $projects, $key) {
  * @param $cred
  * @return \Httpful\Response
  */
-function requestJiraProjects($key, $cred) {
+function requestJiraProjects($cred, $key) {
   //Gets all jira projects of the user
   $uri = BASE_URL . JIRA_ROUTE . '/project';
   if ($key) {
@@ -408,7 +411,7 @@ function getProjectsFromUser($user) {
  * @param $dateTo
  * @return \Httpful\Response
  */
-function getWorklogs($key, $dateFrom, $dateTo, $cred){
+function getWorklogs($key, $dateFrom, $dateTo, $cred) {
   $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $key . '&dateFrom=' . $dateFrom . '&dateTo=' . $dateTo;
   return \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
 }
