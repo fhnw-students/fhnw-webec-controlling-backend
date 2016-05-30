@@ -229,12 +229,11 @@ function getWorklogsRoute($request, $response, $args) {
     $user = getUserByEmail($cred['username']);
     if ($user) {
       $params = $request->getQueryParams();
-      if ($params['dateFrom'] && $params['dateTo']) {
-        $httpResponse = getWorklogs($args['pid'], $params['dateFrom'], $params['dateTo'], $cred);
-        return buildResponseFromJira($response, $httpResponse);
-      } else {
-        return badRequest($response);
-      }
+      $project = getProjectById($args['pid'], $user);
+      $dateFrom = ($params['dateFrom']) ? $params['dateFrom'] : $project['rangestart'];
+      $dateTo = ($params['dateTo']) ? $params['dateTo'] : $project['rangeend'];
+      $httpResponse = getWorklogs($args['pid'], $dateFrom, $dateTo, $cred);
+      return buildResponseFromJira($response, $httpResponse);
     } else {
       return unauthorized($response);
     }
@@ -387,9 +386,9 @@ function getProjectById($key, $user) {
   $db = getDBConnection();
   $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
   $selection->execute(array($user['uid'], $key));
-  $project = $selection->fetchAll(PDO::FETCH_ASSOC);
+  $project = $selection->fetch(PDO::FETCH_ASSOC);
   $db = null;
-  return $project[0];
+  return $project;
 }
 
 /*
