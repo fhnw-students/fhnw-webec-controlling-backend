@@ -14,15 +14,235 @@ define('TEMPO_ROUTE', '/tempo-timesheets/3/worklogs');
 /**
  * Routes
  */
-$app->get('/', sayHello);
-$app->post('/login', login);
-$app->get('/all/projects', getAllProjects);
-$app->get('/projects[/{pid}]', getProjects);
-$app->post('/projects', createProject);
+$app->get('/', sayHelloRoute);
+$app->post('/login', loginRoute);
+$app->get('/all/projects', getAllProjectsRoute);
+$app->get('/projects[/{pid}]', getProjectsRoute);
+$app->post('/projects', createProjectRoute);
 //$app->put('/projects[/{pid}]', updateProject);
 //$app->delete('/projects[/{pid}]', destroyProject);
-$app->get('/projects/{pid}/worklogs', getWorklogs);
+$app->get('/projects/{pid}/worklogs', getWorklogsRoute);
 
+///////////////////////////////////////////////////////////////////////////////////////////
+// Routes
+///////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * Test call to see if the backend is there :-)
+ */
+function sayHelloRoute() {
+  echo 'Welcome to our API';
+}
+
+/**
+ * Demonstrates a login to the jira backend and returns the user. if it is the first
+ * login than we store the user in our db too.
+ * @param $request
+ * @param $response
+ * @return mixed
+ */
+function loginRoute($request, $response) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $uri = BASE_URL . JIRA_ROUTE . '/myself';
+    $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+    if ($httpResponse->code == 200) {
+      $user = getUserByEmail($cred['username']);
+      if (!$user) {
+        createUser($cred['username']);
+      }
+    }
+    $response = buildResponseFromJira($response, $httpResponse);
+  } else {
+    $response = badRequest($response);
+  }
+  return $response;
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @return mixed
+ */
+function getAllProjectsRoute($request, $response) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $uri = BASE_URL . JIRA_ROUTE . '/project';
+      $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+      $response = buildResponseFromJira($response, $httpResponse);
+    } else {
+      $response = unauthorized($response);
+    }
+  } else {
+    $response = badRequest($response);
+  }
+  return $response;
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @return mixed
+ */
+function getProjectsRoute($request, $response, $args) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      //Gets all jira projects of the user
+      $httpResponse = requestAllJiraProjects($args['pid'], $cred);
+      $jiraProjects = $httpResponse->body;
+      // Gets all stored projects in our database
+      if ($args['pid']) {
+        $projects = getProjectById($args['pid'], $user);
+      } else {
+        $projects = getProjectsFromUser($user);
+      }
+      $output = concatJiraAndOurProjects($jiraProjects, $projects, $args['pid']);
+      return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($output);
+    } else {
+      $response = unauthorized($response);
+    }
+  } else {
+    $response = badRequest($response);
+  }
+  return $response;
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @return mixed
+ */
+function createProjectRoute($request, $response) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    $data = getJsonBody($request);
+    if ($user) {
+      $jiraHttpResponse = requestAllJiraProjects($data['pid'], $cred);
+      if ($jiraHttpResponse->code == 200) {
+        $jiraProject = $jiraHttpResponse->body;
+        // Create project in the database
+        $db = getDBConnection();
+        $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :description)');
+        $insert->bindParam(':uid', $user['uid']);
+        $insert->bindParam(':pid', $data['pid']);
+        $insert->bindParam(':name', $data['name']);
+        $insert->bindParam(':weekload', $data['weekload']);
+        $insert->bindParam(':maxhours', $data['maxhours']);
+        $insert->bindParam(':rangestart', $data['rangestart']);
+        $insert->bindParam(':rangeend', $data['rangeend']);
+        $insert->bindParam(':description', $data['description']);
+        $db->beginTransaction();
+        $success = $insert->execute();
+        // Creation was successful
+        if ($success) {
+          $db->commit();
+          $db = null;
+          $project = getProjectById($data['pid'], $user);
+          $output = concatJiraAndOurProjects($jiraProject, $project, $data['pid']);
+          return $response->withStatus(201)->withHeader('Content-Type', 'application/json')->withJson($output);
+        } else {
+          $db->rollBack();
+          $db = null;
+          return badRequest($response);
+        }
+      } else {
+        return buildResponseFromJira($response, $jiraHttpResponse);
+      }
+    } else {
+      return unauthorized($response);
+    }
+  } else {
+    return badRequest($response);
+  }
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @param $args
+ * @return mixed
+ */
+function updateProjectRoute($request, $response, $args) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    $data = getJsonBody($request);
+    if ($user) {
+      $jiraHttpResponse = requestAllJiraProjects($args['pid'], $cred);
+      if ($jiraHttpResponse->code == 200) {
+        // TODO update project in our database and return the jira project and our information like in the GET request (old code is at the bottom)
+
+
+      } else {
+        return buildResponseFromJira($response, $jiraHttpResponse);
+      }
+    } else {
+      return unauthorized($response);
+    }
+  } else {
+    return badRequest($response);
+  }
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @param $args
+ * @return mixed
+ */
+function destroyProjectRoute($request, $response, $args) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $jiraHttpResponse = requestAllJiraProjects($args['pid'], $cred);
+      if ($jiraHttpResponse->code == 200) {
+        // TODO delete project in our database (old code is at the bottom)
+
+      } else {
+        return buildResponseFromJira($response, $jiraHttpResponse);
+      }
+    } else {
+      return unauthorized($response);
+    }
+  } else {
+    return badRequest($response);
+  }
+}
+
+/**
+ * @param $request
+ * @param $response
+ * @param $args
+ * @return mixed
+ */
+function getWorklogsRoute($request, $response, $args) {
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $params = $request->getQueryParams();
+      if ($params['dateFrom'] && $params['dateTo']) {
+        $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $args['pid'] . '&dateFrom=' . $params['dateFrom'] . '&dateTo=' . $params['dateTo'];
+        $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+        return buildResponseFromJira($response, $httpResponse);
+      } else {
+        return badRequest($response);
+      }
+    } else {
+      return unauthorized($response);
+    }
+  } else {
+    return badRequest($response);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Helpers
 ///////////////////////////////////////////////////////////////////////////////////////////
 /**
  * open database connection to the MySQL server
@@ -86,31 +306,6 @@ function decodeUserCredentials($request) {
 }
 
 /**
- * Demonstrates a login to the jira backend and returns the user. if it is the first
- * login than we store the user in our db too.
- * @param $request
- * @param $response
- * @return mixed
- */
-function login($request, $response) {
-  if ($request->hasHeader('Authorization')) {
-    $cred = decodeUserCredentials($request);
-    $uri = BASE_URL . JIRA_ROUTE . '/myself';
-    $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
-    if ($httpResponse->code == 200) {
-      $user = getUserByEmail($cred['username']);
-      if (!$user) {
-        createUser($cred['username']);
-      }
-    }
-    $response = buildResponseFromJira($response, $httpResponse);
-  } else {
-    $response = badRequest($response);
-  }
-  return $response;
-}
-
-/**
  * Finds the user with the given username in our database
  * @param $username
  * @return mixed
@@ -131,76 +326,14 @@ function createUser($username) {
   $db = getDBConnection();
   $insert = $db->prepare('INSERT INTO users (email) VALUES (:email)');
   $insert->bindParam(':email', $username);
-
   $db->beginTransaction();
-
   $success = $insert->execute();
   if ($success) {
     $db->commit();
   } else {
     $db->rollBack();
   }
-
   $db = null;
-}
-
-/**
- * Test call to see if the backend is there :-)
- */
-function sayHello() {
-  echo 'Welcome to our API';
-}
-
-/**
- * @param $request
- * @param $response
- * @return mixed
- */
-function getAllProjects($request, $response) {
-  if ($request->hasHeader('Authorization')) {
-    $cred = decodeUserCredentials($request);
-    $user = getUserByEmail($cred['username']);
-    if ($user) {
-      $uri = BASE_URL . JIRA_ROUTE . '/project';
-      $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
-      $response = buildResponseFromJira($response, $httpResponse);
-    } else {
-      $response = unauthorized($response);
-    }
-  } else {
-    $response = badRequest($response);
-  }
-  return $response;
-}
-
-/**
- * @param $request
- * @param $response
- * @return mixed
- */
-function getProjects($request, $response, $args) {
-  if ($request->hasHeader('Authorization')) {
-    $cred = decodeUserCredentials($request);
-    $user = getUserByEmail($cred['username']);
-    if ($user) {
-      //Gets all jira projects of the user
-      $httpResponse = getAllJiraProjects($args['pid'], $cred);
-      $jiraProjects = $httpResponse->body;
-      // Gets all stored projects in our database
-      if ($args['pid']) {
-        $projects = getProjectById($args['pid'], $user);
-      } else {
-        $projects = getProjectsFromUser($user);
-      }
-      $output = concatJiraAndOurProjects($jiraProjects, $projects, $args['pid']);
-      return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($output);
-    } else {
-      $response = unauthorized($response);
-    }
-  } else {
-    $response = badRequest($response);
-  }
-  return $response;
 }
 
 /**
@@ -233,7 +366,7 @@ function concatJiraAndOurProjects($jiraProjects, $projects, $key) {
  * @param $cred
  * @return \Httpful\Response
  */
-function getAllJiraProjects($key, $cred) {
+function requestJiraProjects($key, $cred) {
   //Gets all jira projects of the user
   $uri = BASE_URL . JIRA_ROUTE . '/project';
   if ($key) {
@@ -268,137 +401,6 @@ function getProjectsFromUser($user) {
   $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
   $db = null;
   return $projects;
-}
-
-/**
- * @param $request
- * @param $response
- * @return mixed
- */
-function createProject($request, $response) {
-  if ($request->hasHeader('Authorization')) {
-    $cred = decodeUserCredentials($request);
-    $user = getUserByEmail($cred['username']);
-    $data = getJsonBody($request);
-    if ($user) {
-      $jiraHttpResponse = getAllJiraProjects($data['pid'], $cred);
-      if ($jiraHttpResponse->code == 200) {
-        $jiraProject = $jiraHttpResponse->body;
-        // Create project in the database
-        $db = getDBConnection();
-        $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :description)');
-        $insert->bindParam(':uid', $user['uid']);
-        $insert->bindParam(':pid', $data['pid']);
-        $insert->bindParam(':name', $data['name']);
-        $insert->bindParam(':weekload', $data['weekload']);
-        $insert->bindParam(':maxhours', $data['maxhours']);
-        $insert->bindParam(':rangestart', $data['rangestart']);
-        $insert->bindParam(':rangeend', $data['rangeend']);
-        $insert->bindParam(':description', $data['description']);
-        $db->beginTransaction();
-        $success = $insert->execute();
-        // Creation was successful
-        if ($success) {
-          $db->commit();
-          $db = null;
-          $project = getProjectById($data['pid'], $user);
-          $output = concatJiraAndOurProjects($jiraProject, $project, $data['pid']);
-          return $response->withStatus(201)->withHeader('Content-Type', 'application/json')->withJson($output);
-        } else {
-          $db->rollBack();
-          $db = null;
-          return badRequest($response);
-        }
-      } else {
-        return buildResponseFromJira($response, $jiraHttpResponse);
-      }
-    } else {
-      return unauthorized($response);
-    }
-  } else {
-    return badRequest($response);
-  }
-}
-
-/**
- * @param $request
- * @param $response
- * @param $args
- * @return mixed
- */
-function updateProject($request, $response, $args) {
-  if ($request->hasHeader('Authorization')) {
-    $cred = decodeUserCredentials($request);
-    $user = getUserByEmail($cred['username']);
-    $data = getJsonBody($request);
-    if ($user) {
-      $jiraHttpResponse = getAllJiraProjects($args['pid'], $cred);
-      if ($jiraHttpResponse->code == 200) {
-        // TODO update project in our database and return the jira project and our information like in the GET request (old code is at the bottom)
-
-
-      } else {
-        return buildResponseFromJira($response, $jiraHttpResponse);
-      }
-    } else {
-      return unauthorized($response);
-    }
-  } else {
-    return badRequest($response);
-  }
-}
-
-/**
- * @param $request
- * @param $response
- * @param $args
- * @return mixed
- */
-function destroyProject($request, $response, $args) {
-  if ($request->hasHeader('Authorization')) {
-    $cred = decodeUserCredentials($request);
-    $user = getUserByEmail($cred['username']);
-    if ($user) {
-      $jiraHttpResponse = getAllJiraProjects($args['pid'], $cred);
-      if ($jiraHttpResponse->code == 200) {
-        // TODO delete project in our database (old code is at the bottom)
-
-      } else {
-        return buildResponseFromJira($response, $jiraHttpResponse);
-      }
-    } else {
-      return unauthorized($response);
-    }
-  } else {
-    return badRequest($response);
-  }
-}
-
-/**
- * @param $request
- * @param $response
- * @param $args
- * @return mixed
- */
-function getWorklogs($request, $response, $args) {
-  if ($request->hasHeader('Authorization')) {
-    $cred = decodeUserCredentials($request);
-    $user = getUserByEmail($cred['username']);
-    if ($user) {
-      $params = $request->getQueryParams();
-      if ($params['dateFrom'] && $params['dateTo']) {
-        $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $args['pid'] . '&dateFrom=' . $params['dateFrom'] . '&dateTo=' . $params['dateTo'];
-        $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
-        return buildResponseFromJira($response, $httpResponse);
-      } else {
-        return badRequest($response);
-      }
-    } else {
-      return unauthorized($response);
-    }
-  } else {
-    return badRequest($response);
-  }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
