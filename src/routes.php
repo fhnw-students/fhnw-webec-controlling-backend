@@ -99,10 +99,12 @@ function getProjectsRoute($request, $response, $args) {
         // Gets all stored projects in our database
         if ($args['pid']) {
           $projects = getProjectById($args['pid'], $user);
+          if (!$projects) {
+            return notFound($response);
+          }
         } else {
           $projects = getProjectsFromUser($user);
         }
-        echo 'asdfsadf';
         $output = concatJiraAndOurProjects($httpResponse->body, $projects, $args['pid']);
         return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($output);
       } else {
@@ -179,7 +181,7 @@ function updateProjectRoute($request, $response, $args) {
     $user = getUserByEmail($cred['username']);
     $data = getJsonBody($request);
     if ($user) {
-      $jiraHttpResponse = requestJiraProjects($args['pid'], $cred);
+      $jiraHttpResponse = requestJiraProjects($cred, $args['pid']);
       if ($jiraHttpResponse->code == 200) {
         $db = getDBConnection();
         $update = $db->prepare('UPDATE projects SET pid=?, name=?, weekload=?, maxhours=?, rangestart=?, rangeend=?, description=? WHERE uid=? AND pid=?');
@@ -190,7 +192,7 @@ function updateProjectRoute($request, $response, $args) {
         if ($success) {
           $db->commit();
           $db = null;
-          $output = concatJiraAndOurProjects($jiraHttpResponse->body,$data, true);
+          $output = concatJiraAndOurProjects($jiraHttpResponse->body, $data, true);
           return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($output);
         } else {
           $db->rollBack();
@@ -220,7 +222,7 @@ function destroyProjectRoute($request, $response, $args) {
     $cred = decodeUserCredentials($request);
     $user = getUserByEmail($cred['username']);
     if ($user) {
-      $jiraHttpResponse = requestJiraProjects($args['pid'], $cred);
+      $jiraHttpResponse = requestJiraProjects($cred, $args['pid']);
       if ($jiraHttpResponse->code == 200) {
         $db = getDBConnection();
         $delete = $db->prepare('DELETE FROM projects WHERE uid=? AND pid=?');
@@ -504,6 +506,15 @@ function getDBConnection() {
  */
 function badRequest($response) {
   return $response->withStatus(400)->withHeader('Content-Type', 'text/html')->write('Bad Request');
+}
+
+/**
+ * Builds a not found 404 response
+ * @param $response
+ * @return mixed
+ */
+function notFound($response) {
+  return $response->withStatus(404)->withHeader('Content-Type', 'text/html')->write('Not Found');
 }
 
 /**
