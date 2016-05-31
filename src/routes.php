@@ -19,8 +19,8 @@ $app->post('/login', loginRoute);
 $app->get('/all/projects', getAllProjectsRoute);
 $app->get('/projects[/{pid}]', getProjectsRoute);
 $app->post('/projects', createProjectRoute);
-//$app->put('/projects[/{pid}]', updateProject);
-//$app->delete('/projects[/{pid}]', destroyProject);
+$app->put('/projects[/{pid}]', updateProjectRoute);
+$app->delete('/projects[/{pid}]', destroyProjectRoute);
 $app->get('/projects/{pid}/worklogs', getWorklogsRoute);
 $app->get('/projects/{pid}/members', getProjectMemberRoute);
 $app->get('/projects/{pid}/resources/graph', getProjectResourcesGraphRoute);
@@ -181,8 +181,22 @@ function updateProjectRoute($request, $response, $args) {
     if ($user) {
       $jiraHttpResponse = requestJiraProjects($args['pid'], $cred);
       if ($jiraHttpResponse->code == 200) {
-        // TODO update project in our database and return the jira project and our information like in the GET request (old code is at the bottom)
+        $db = getDBConnection();
+        $update = $db->prepare('UPDATE projects SET pid=?, name=?, weekload=?, maxhours=?, rangestart=?, rangeend=?, description=? WHERE uid=? AND pid=?');
 
+        $db->beginTransaction();
+
+        $success = $update->execute(array($args['pid'], $data['name'], $data['weekload'], $data['maxhours'], $data['rangestart'], $data['rangeend'], $data['description'], $user['uid'], $args['pid']));
+        if ($success) {
+          $db->commit();
+          $db = null;
+          $output = concatJiraAndOurProjects($jiraHttpResponse->body,$data, true);
+          return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($output);
+        } else {
+          $db->rollBack();
+          $db = null;
+          return badRequest($response);
+        }
 
       } else {
         return buildResponseFromJira($response, $jiraHttpResponse);
@@ -208,8 +222,19 @@ function destroyProjectRoute($request, $response, $args) {
     if ($user) {
       $jiraHttpResponse = requestJiraProjects($args['pid'], $cred);
       if ($jiraHttpResponse->code == 200) {
-        // TODO delete project in our database (old code is at the bottom)
-
+        $db = getDBConnection();
+        $delete = $db->prepare('DELETE FROM projects WHERE uid=? AND pid=?');
+        $db->beginTransaction();
+        $success = $delete->execute(array($user['uid'], $args['pid']));
+        if ($success) {
+          $db->commit();
+          $db = null;
+          return $response->withStatus(204);
+        } else {
+          $db->rollBack();
+          $db = null;
+          return badRequest($response);
+        }
       } else {
         return buildResponseFromJira($response, $jiraHttpResponse);
       }
@@ -660,55 +685,3 @@ function getWeekLabel($worklogs) {
   $weeks = array_unique($weeks, SORT_STRING);
   return array_values($weeks);
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-/**
- * update information of a project
- *
- * @param $request
- * @param $response
- * @param $args
- */
-//function updateProject($request, $response, $args) {
-//  $json = $request->getBody();
-//  $data = json_decode($json, true);
-//
-//  $db = getDBConnection();
-//  $update = $db->prepare('UPDATE projects SET pid=?, name=?, weekload=?, maxhours=?, rangestart=?, rangeend=?, description=? WHERE uid=? AND pid=?');
-//  $update->bindParam(':uid', $args['uid']);
-//  $update->bindParam(':pid', $data['pid']);
-//
-//  $db->beginTransaction();
-//
-//  $success = $update->execute(array($data['pid'], $data['name'], $data['weekload'], $data['maxhours'], $data['rangestart'], $data['rangeend'], $data['description'], $args['uid'], $data['pid']));
-//  if ($success) {
-//    $db->commit();
-//  } else {
-//    $db->rollBack();
-//  }
-//
-//  $db = null;
-//}
-
-/**
- * delete a project from an user
- *
- * @param $request
- * @param $response
- * @param $args
- */
-//function deleteProject($request, $response, $args) {
-//  $db = getDBConnection();
-//  $delete = $db->prepare('DELETE FROM projects WHERE uid=? AND pid=?');
-//  $db->beginTransaction();
-//  $success = $delete->execute(array($args['uid'], $args['pid']));
-//  if ($success) {
-//    $db->commit();
-//  } else {
-//    $db->rollBack();
-//  }
-//
-//  $db = null;
-//}
