@@ -24,6 +24,7 @@ $app->delete('/projects[/{pid}]', destroyProjectRoute);
 $app->get('/projects/{pid}/worklogs', getWorklogsRoute);
 $app->get('/projects/{pid}/members', getProjectMemberRoute);
 $app->get('/projects/{pid}/resources/graph', getProjectResourcesGraphRoute);
+$app->get('/projects/{pid}/resources/table', getProjectResourcesTableRoute);
 $app->get('/projects/{pid}/efficiency/graph', getProjectEfficiencyGraphRoute);
 $app->get('/projects/{pid}/team/graph', getProjectTeamGraphRoute);
 
@@ -480,6 +481,49 @@ function getProjectTeamGraphRoute($request, $response, $args) {
   } else {
     return badRequest($response);
   }
+}
+
+function getProjectResourcesTableRoute($request, $response, $args){
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $project = getProjectById($args['pid'], $user);
+      $httpResponse = getWorklogs($args['pid'], $project['rangestart'], $project['rangeend'], $cred);
+      $worklogs = $httpResponse->body;
+      $members = getProjectMembers($worklogs);
+      // Gets labels
+      $worklogs = parseWeeklogs($worklogs);
+
+      // builds datasets
+      $dataset = array();
+      $data = array();
+
+
+      //foreach($members as $key => $value) {
+        $members = $members[0];
+        $data[0] = $members;
+      //}
+
+
+      for($i =0; $i< count($worklogs); $i++){
+          if ($worklogs[$i]['name'] === 'gerhard.hirschfeld@students.fhnw.ch'){
+            $data[1] += $worklogs[$i]['timeSpentSeconds']/3600;
+          }
+      }
+
+      foreach ($worklogs as $value){
+
+        }
+        $worktime = $worklogs[6]['timeSpentSeconds'];
+        //foreach($worklogs as $value)
+        print_r($data);
+
+      //}
+    }
+  }
+
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
