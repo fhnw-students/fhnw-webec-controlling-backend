@@ -595,9 +595,9 @@ function createUser($username) {
  */
 function concatJiraAndOurProjects($jiraProjects, $projects, $key) {
   if ($key) {
-    return array('config' => $projects, 'jira' => $jiraProjects);
+    $projects['jira'] = $jiraProjects;
+    return $projects;
   } else {
-    $output = array();
     for ($i = 0; $i < count($projects); $i++) {
       $jiraProject = null;
       for ($j = 0; $j < count($jiraProjects); $j++) {
@@ -605,10 +605,10 @@ function concatJiraAndOurProjects($jiraProjects, $projects, $key) {
           $jiraProject = $jiraProjects[$j];
         }
       }
-      array_push($output, array('config' => $projects[$i], 'jira' => $jiraProject));
+      $projects[$i]['jira'] = $jiraProject;
     }
   }
-  return $output;
+  return $projects;
 }
 
 /**
