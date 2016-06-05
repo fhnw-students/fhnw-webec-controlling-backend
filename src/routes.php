@@ -672,10 +672,14 @@ function getProjectMembers($worklogs) {
   $mapFunction = function ($item) {
     return $item->author;
   };
-  $members = array_map($mapFunction, $worklogs);
+  $authors = array_map($mapFunction, $worklogs);
+  $hasMembers = array();
   $result = array();
-  for ($i = 0; $i < count($members); $i++) {
-    $result[$members[$i]->name] = $members[$i];
+  for ($i = 0; $i < count($authors); $i++) {
+    if ($hasMembers[$authors[$i]->name] !== true) {
+      $hasMembers[$authors[$i]->name] = true;
+      array_push($result, $authors[$i]);
+    }
   }
   return $result;
 }
