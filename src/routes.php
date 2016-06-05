@@ -130,7 +130,7 @@ function createProjectRoute($request, $response) {
     $user = getUserByEmail($cred['username']);
     $data = getJsonBody($request);
     if ($user) {
-      $jiraHttpResponse = requestJiraProjects($cred, $args['pid']);
+      $jiraHttpResponse = requestJiraProjects($cred, $data['pid']);
       if ($jiraHttpResponse->code == 200) {
         $jiraProject = $jiraHttpResponse->body;
         // Create project in the database
