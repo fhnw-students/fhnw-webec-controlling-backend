@@ -135,7 +135,7 @@ function createProjectRoute($request, $response) {
         $jiraProject = $jiraHttpResponse->body;
         // Create project in the database
         $db = getDBConnection();
-        $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :description)');
+        $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, teamSize, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :teamSize, :description)');
         $insert->bindParam(':uid', $user['uid']);
         $insert->bindParam(':pid', $data['pid']);
         $insert->bindParam(':name', $data['name']);
@@ -143,6 +143,7 @@ function createProjectRoute($request, $response) {
         $insert->bindParam(':maxhours', $data['maxhours']);
         $insert->bindParam(':rangestart', $data['rangestart']);
         $insert->bindParam(':rangeend', $data['rangeend']);
+        $insert->bindParam(':teamSize', $data['teamSize']);
         $insert->bindParam(':description', $data['description']);
         $db->beginTransaction();
         $success = $insert->execute();
@@ -184,11 +185,9 @@ function updateProjectRoute($request, $response, $args) {
       $jiraHttpResponse = requestJiraProjects($cred, $args['pid']);
       if ($jiraHttpResponse->code == 200) {
         $db = getDBConnection();
-        $update = $db->prepare('UPDATE projects SET pid=?, name=?, weekload=?, maxhours=?, rangestart=?, rangeend=?, description=? WHERE uid=? AND pid=?');
-
+        $update = $db->prepare('UPDATE projects SET pid=?, name=?, weekload=?, maxhours=?, rangestart=?, rangeend=?, teamSize=?, description=? WHERE uid=? AND pid=?');
         $db->beginTransaction();
-
-        $success = $update->execute(array($args['pid'], $data['name'], $data['weekload'], $data['maxhours'], $data['rangestart'], $data['rangeend'], $data['description'], $user['uid'], $args['pid']));
+        $success = $update->execute(array($args['pid'], $data['name'], $data['weekload'], $data['maxhours'], $data['rangestart'], $data['rangeend'], $data['teamSize'], $data['description'], $user['uid'], $args['pid']));
         if ($success) {
           $db->commit();
           $db = null;
@@ -446,7 +445,7 @@ function getProjectTeamGraphRoute($request, $response, $args) {
       $dataPlaned = array();
       $dataReal = array();
       for ($w = 0; $w < count($labels); $w++) {
-        $dataPlaned[$w] = intval($project['weekload']);
+        $dataPlaned[$w] = intval($project['weekload']) * intval($project['teamSize']);
         if ($w > 0) {
           $dataPlaned[$w] = $dataPlaned[$w] + $dataPlaned[$w - 1];
         }
