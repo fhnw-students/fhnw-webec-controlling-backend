@@ -38,7 +38,7 @@ All request need following headers.
 | Accept        | application/json |
 | Authorization | Basic {token}    |
 
-## Login - _GET /login_
+## Login - _GET /auth/login_
 ### Request
 **Body**
 

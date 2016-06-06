@@ -15,7 +15,7 @@ define('TEMPO_ROUTE', '/tempo-timesheets/3/worklogs');
  * Routes
  */
 $app->get('/', sayHelloRoute);
-$app->post('/login', loginRoute);
+$app->post('/auth/login', loginRoute);
 $app->get('/all/projects', getAllProjectsRoute);
 $app->get('/projects[/{pid}]', getProjectsRoute);
 $app->post('/projects', createProjectRoute);
