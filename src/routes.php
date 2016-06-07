@@ -24,6 +24,7 @@ $app->delete('/projects[/{pid}]', destroyProjectRoute);
 $app->get('/projects/{pid}/worklogs', getWorklogsRoute);
 $app->get('/projects/{pid}/members', getProjectMemberRoute);
 $app->get('/projects/{pid}/resources/graph', getProjectResourcesGraphRoute);
+$app->get('/projects/{pid}/resources/table', getProjectResourcesTableRoute);
 $app->get('/projects/{pid}/efficiency/graph', getProjectEfficiencyGraphRoute);
 $app->get('/projects/{pid}/team/graph', getProjectTeamGraphRoute);
 
@@ -481,221 +482,285 @@ function getProjectTeamGraphRoute($request, $response, $args) {
   }
 }
 
+function getProjectResourcesTableRoute($request, $response, $args){
+  if ($request->hasHeader('Authorization')) {
+    $cred = decodeUserCredentials($request);
+    $user = getUserByEmail($cred['username']);
+    if ($user) {
+      $project = getProjectById($args['pid'], $user);
+      $httpResponse = getWorklogs($args['pid'], $project['rangestart'], $project['rangeend'], $cred);
+      $worklogs = $httpResponse->body;
+      $members = getProjectMembers($worklogs);
+      // Gets labels
+      $worklogs = parseWeeklogs($worklogs);
+      $labels = getWeekLabel($worklogs);
+
+
+      for($i = 0; $i < count($members); $i++) {
+        $member = $members[$i];
+        $member->hours = 0;
+
+        //workload of a member
+        for ($n = 0; $n < count($worklogs); $n++) {
+          if ($worklogs[$n]['name'] === $member->name) {
+            $member->hours += $worklogs[$n]['timeSpentSeconds'] / 3600;
+          }
+        }
+
+
+        //difference to planned weekly workload
+        $member->difference = 0;
+        for ($w = 0; $w < count($labels); $w++) {
+          $dataPlaned[$w] = (intval($project['weekload']) * intval($project['teamSize'])) / 4;
+          if ($w > 0) {
+            $dataPlaned[$w] = $dataPlaned[$w] + $dataPlaned[$w - 1];
+          }
+          $max = $dataPlaned[count($dataPlaned) - 1];
+        }
+        $member->difference = $member->hours - $max;
+
+      }
+        print_r($members);
+        //print_r($max);
+
+
+    }
+  }
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Helpers
 ///////////////////////////////////////////////////////////////////////////////////////////
-/**
- * open database connection to the MySQL server
- */
-function getDBConnection() {
-  $user = 'wtecch_fhnwWebec';
-  $pwd = 'bUa&2QaU&5fa!2D';
-  $connectionString = "mysql:host=194.126.200.46;dbname=wtecch_fhnwWebecJira";
-  try {
-    return new PDO($connectionString, $user, $pwd);
-  } catch (Exception $e) {
-    exit ($e->getMessage());
+  /**
+   * open database connection to the MySQL server
+   */
+  function getDBConnection()
+  {
+    $user = 'wtecch_fhnwWebec';
+    $pwd = 'bUa&2QaU&5fa!2D';
+    $connectionString = "mysql:host=194.126.200.46;dbname=wtecch_fhnwWebecJira";
+    try {
+      return new PDO($connectionString, $user, $pwd);
+    } catch (Exception $e) {
+      exit ($e->getMessage());
+    }
   }
-}
 
-/**
- * Builds a bad request 400 response
- * @param $response
- * @return mixed
- */
-function badRequest($response) {
-  return $response->withStatus(400)->withHeader('Content-Type', 'text/html')->write('Bad Request');
-}
-
-/**
- * Builds a not found 404 response
- * @param $response
- * @return mixed
- */
-function notFound($response) {
-  return $response->withStatus(404)->withHeader('Content-Type', 'text/html')->write('Not Found');
-}
-
-/**
- * Builds a unauthorized 401 response
- * @param $response
- * @return mixed
- */
-function unauthorized($response) {
-  return $response->withStatus(401)->withHeader('Content-Type', 'text/html')->write('Unauthorized');
-}
-
-/**
- * @param $request
- * @return mixed
- */
-function getJsonBody($request) {
-  return json_decode($request->getBody(), true);
-}
-
-/**
- * Builds the response with the output form the jira call
- * @param $response
- * @param $httpResponse
- * @return mixed
- */
-function buildResponseFromJira($response, $httpResponse) {
-  return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($httpResponse->body);
-}
-
-/**
- * Gets the username and the password from the access token and returns them.
- * @param $request
- * @return ArrayObject
- */
-function decodeUserCredentials($request) {
-  $token = substr($request->getHeaderLine('Authorization'), 6);
-  list($username, $password) = explode(':', base64_decode($token));
-  return array("username" => $username, "password" => $password);
-}
-
-/**
- * Finds the user with the given username in our database
- * @param $username
- * @return mixed
- */
-function getUserByEmail($username) {
-  $db = getDBConnection();
-  $selection = $db->prepare('SELECT * FROM users WHERE email = ?');
-  $selection->execute(array($username));
-  $db = null;
-  return $selection->fetch(PDO::FETCH_ASSOC);
-}
-
-/**
- * Creates a new user in our database
- * @param $username
- */
-function createUser($username) {
-  $db = getDBConnection();
-  $insert = $db->prepare('INSERT INTO users (email) VALUES (:email)');
-  $insert->bindParam(':email', $username);
-  $db->beginTransaction();
-  $success = $insert->execute();
-  if ($success) {
-    $db->commit();
-  } else {
-    $db->rollBack();
+  /**
+   * Builds a bad request 400 response
+   * @param $response
+   * @return mixed
+   */
+  function badRequest($response)
+  {
+    return $response->withStatus(400)->withHeader('Content-Type', 'text/html')->write('Bad Request');
   }
-  $db = null;
-}
 
-/**
- * Concats the jira and our project information
- * @param $jiraProjects
- * @param $projects
- * @param $key
- * @return array
- */
-function concatJiraAndOurProjects($jiraProjects, $projects, $key) {
-  if ($key) {
-    $projects['jira'] = $jiraProjects;
-    return $projects;
-  } else {
-    for ($i = 0; $i < count($projects); $i++) {
-      $jiraProject = null;
-      for ($j = 0; $j < count($jiraProjects); $j++) {
-        if ($projects[$i]['pid'] == $jiraProjects[$j]->key) {
-          $jiraProject = $jiraProjects[$j];
+  /**
+   * Builds a not found 404 response
+   * @param $response
+   * @return mixed
+   */
+  function notFound($response)
+  {
+    return $response->withStatus(404)->withHeader('Content-Type', 'text/html')->write('Not Found');
+  }
+
+  /**
+   * Builds a unauthorized 401 response
+   * @param $response
+   * @return mixed
+   */
+  function unauthorized($response)
+  {
+    return $response->withStatus(401)->withHeader('Content-Type', 'text/html')->write('Unauthorized');
+  }
+
+  /**
+   * @param $request
+   * @return mixed
+   */
+  function getJsonBody($request)
+  {
+    return json_decode($request->getBody(), true);
+  }
+
+  /**
+   * Builds the response with the output form the jira call
+   * @param $response
+   * @param $httpResponse
+   * @return mixed
+   */
+  function buildResponseFromJira($response, $httpResponse)
+  {
+    return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($httpResponse->body);
+  }
+
+  /**
+   * Gets the username and the password from the access token and returns them.
+   * @param $request
+   * @return ArrayObject
+   */
+  function decodeUserCredentials($request)
+  {
+    $token = substr($request->getHeaderLine('Authorization'), 6);
+    list($username, $password) = explode(':', base64_decode($token));
+    return array("username" => $username, "password" => $password);
+  }
+
+  /**
+   * Finds the user with the given username in our database
+   * @param $username
+   * @return mixed
+   */
+  function getUserByEmail($username)
+  {
+    $db = getDBConnection();
+    $selection = $db->prepare('SELECT * FROM users WHERE email = ?');
+    $selection->execute(array($username));
+    $db = null;
+    return $selection->fetch(PDO::FETCH_ASSOC);
+  }
+
+  /**
+   * Creates a new user in our database
+   * @param $username
+   */
+  function createUser($username)
+  {
+    $db = getDBConnection();
+    $insert = $db->prepare('INSERT INTO users (email) VALUES (:email)');
+    $insert->bindParam(':email', $username);
+    $db->beginTransaction();
+    $success = $insert->execute();
+    if ($success) {
+      $db->commit();
+    } else {
+      $db->rollBack();
+    }
+    $db = null;
+  }
+
+  /**
+   * Concats the jira and our project information
+   * @param $jiraProjects
+   * @param $projects
+   * @param $key
+   * @return array
+   */
+  function concatJiraAndOurProjects($jiraProjects, $projects, $key)
+  {
+    if ($key) {
+      $projects['jira'] = $jiraProjects;
+      return $projects;
+    } else {
+      for ($i = 0; $i < count($projects); $i++) {
+        $jiraProject = null;
+        for ($j = 0; $j < count($jiraProjects); $j++) {
+          if ($projects[$i]['pid'] == $jiraProjects[$j]->key) {
+            $jiraProject = $jiraProjects[$j];
+          }
         }
+        $projects[$i]['jira'] = $jiraProject;
       }
-      $projects[$i]['jira'] = $jiraProject;
     }
+    return $projects;
   }
-  return $projects;
-}
 
-/**
- * @param $key
- * @param $cred
- * @return \Httpful\Response
- */
-function requestJiraProjects($cred, $key) {
-  //Gets all jira projects of the user
-  $uri = BASE_URL . JIRA_ROUTE . '/project';
-  if ($key) {
-    $uri = $uri . '/' . $key;
-  }
-  $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
-  return $httpResponse;
-}
-
-/**
- * @param $key
- * @param $user
- * @return mixed
- */
-function getProjectById($key, $user) {
-  $db = getDBConnection();
-  $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
-  $selection->execute(array($user['uid'], $key));
-  $project = $selection->fetch(PDO::FETCH_ASSOC);
-  $db = null;
-  return $project;
-}
-
-/*
- * @param $user
- * @return mixed
- */
-function getProjectsFromUser($user) {
-  $db = getDBConnection();
-  $selection = $db->prepare('SELECT * FROM projects WHERE uid = ?');
-  $selection->execute(array($user['uid']));
-  $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
-  $db = null;
-  return $projects;
-}
-
-/**
- * @param $key
- * @param $dateFrom
- * @param $dateTo
- * @return \Httpful\Response
- */
-function getWorklogs($key, $dateFrom, $dateTo, $cred) {
-  $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $key . '&dateFrom=' . $dateFrom . '&dateTo=' . $dateTo;
-  return \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
-}
-
-/**
- * @param $worklogs
- * @return array
- */
-function getProjectMembers($worklogs) {
-  $mapFunction = function ($item) {
-    return $item->author;
-  };
-  $authors = array_map($mapFunction, $worklogs);
-  $hasMembers = array();
-  $result = array();
-  for ($i = 0; $i < count($authors); $i++) {
-    if ($hasMembers[$authors[$i]->name] !== true) {
-      $hasMembers[$authors[$i]->name] = true;
-      array_push($result, $authors[$i]);
+  /**
+   * @param $key
+   * @param $cred
+   * @return \Httpful\Response
+   */
+  function requestJiraProjects($cred, $key)
+  {
+    //Gets all jira projects of the user
+    $uri = BASE_URL . JIRA_ROUTE . '/project';
+    if ($key) {
+      $uri = $uri . '/' . $key;
     }
+    $httpResponse = \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+    return $httpResponse;
   }
-  return $result;
-}
 
-function parseWeeklogs($worklogs) {
-  $mapFunctionWorklog = function ($log) {
-    $date = new DateTime($log->dateStarted);
-    return array('id' => $log->id, 'timeSpentSeconds' => $log->timeSpentSeconds, 'dateStarted' => $log->dateStarted, 'displayName' => $log->author->displayName, 'name' => $log->author->name, 'year' => $date->format('Y'), 'week' => $date->format('W'));
-  };
-  return array_map($mapFunctionWorklog, $worklogs);
-}
+  /**
+   * @param $key
+   * @param $user
+   * @return mixed
+   */
+  function getProjectById($key, $user)
+  {
+    $db = getDBConnection();
+    $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
+    $selection->execute(array($user['uid'], $key));
+    $project = $selection->fetch(PDO::FETCH_ASSOC);
+    $db = null;
+    return $project;
+  }
 
-function getWeekLabel($worklogs) {
-  $mapFunctionWeeks = function ($item) {
-    return $item['week'] . '/' . $item['year'];
-  };
-  $weeks = array_map($mapFunctionWeeks, $worklogs);
-  $weeks = array_unique($weeks, SORT_STRING);
-  return array_values($weeks);
-}
+  /*
+   * @param $user
+   * @return mixed
+   */
+  function getProjectsFromUser($user)
+  {
+    $db = getDBConnection();
+    $selection = $db->prepare('SELECT * FROM projects WHERE uid = ?');
+    $selection->execute(array($user['uid']));
+    $projects = $selection->fetchAll(PDO::FETCH_ASSOC);
+    $db = null;
+    return $projects;
+  }
+
+  /**
+   * @param $key
+   * @param $dateFrom
+   * @param $dateTo
+   * @return \Httpful\Response
+   */
+  function getWorklogs($key, $dateFrom, $dateTo, $cred)
+  {
+    $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $key . '&dateFrom=' . $dateFrom . '&dateTo=' . $dateTo;
+    return \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
+  }
+
+  /**
+   * @param $worklogs
+   * @return array
+   */
+  function getProjectMembers($worklogs)
+  {
+    $mapFunction = function ($item) {
+      return $item->author;
+    };
+    $authors = array_map($mapFunction, $worklogs);
+    $hasMembers = array();
+    $result = array();
+    for ($i = 0; $i < count($authors); $i++) {
+      if ($hasMembers[$authors[$i]->name] !== true) {
+        $hasMembers[$authors[$i]->name] = true;
+        array_push($result, $authors[$i]);
+      }
+    }
+    return $result;
+  }
+
+  function parseWeeklogs($worklogs)
+  {
+    $mapFunctionWorklog = function ($log) {
+      $date = new DateTime($log->dateStarted);
+      return array('id' => $log->id, 'timeSpentSeconds' => $log->timeSpentSeconds, 'dateStarted' => $log->dateStarted, 'displayName' => $log->author->displayName, 'name' => $log->author->name, 'year' => $date->format('Y'), 'week' => $date->format('W'));
+    };
+    return array_map($mapFunctionWorklog, $worklogs);
+  }
+
+  function getWeekLabel($worklogs)
+  {
+    $mapFunctionWeeks = function ($item) {
+      return $item['week'] . '/' . $item['year'];
+    };
+    $weeks = array_map($mapFunctionWeeks, $worklogs);
+    $weeks = array_unique($weeks, SORT_STRING);
+    return array_values($weeks);
+  }
