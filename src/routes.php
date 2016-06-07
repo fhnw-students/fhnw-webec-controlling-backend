@@ -64,9 +64,10 @@ function loginRoute($request, $response) {
 }
 
 /**
+ * Get all projects from JIRA of logged in user
  * @param $request
  * @param $response
- * @return mixed
+ * @return $response
  */
 function getAllProjectsRoute($request, $response) {
   if ($request->hasHeader('Authorization')) {
@@ -99,9 +100,10 @@ function getAllProjectsRoute($request, $response) {
 }
 
 /**
+ * Get one project from JIRA
  * @param $request
  * @param $response
- * @return mixed
+ * @return $response
  */
 function getProjectsRoute($request, $response, $args) {
   if ($request->hasHeader('Authorization')) {
@@ -145,9 +147,10 @@ function getProjectsRoute($request, $response, $args) {
 }
 
 /**
+ * Create a new project (add to database)
  * @param $request
  * @param $response
- * @return mixed
+ * @return $response
  */
 function createProjectRoute($request, $response) {
   if ($request->hasHeader('Authorization')) {
@@ -196,10 +199,11 @@ function createProjectRoute($request, $response) {
 }
 
 /**
+ * Update a project (update database)
  * @param $request
  * @param $response
  * @param $args
- * @return mixed
+ * @return $response
  */
 function updateProjectRoute($request, $response, $args) {
   if ($request->hasHeader('Authorization')) {
@@ -236,10 +240,11 @@ function updateProjectRoute($request, $response, $args) {
 }
 
 /**
+ * Delete a project (remove from database)
  * @param $request
  * @param $response
  * @param $args
- * @return mixed
+ * @return $response
  */
 function destroyProjectRoute($request, $response, $args) {
   if ($request->hasHeader('Authorization')) {
@@ -273,10 +278,13 @@ function destroyProjectRoute($request, $response, $args) {
 }
 
 /**
+ * Get worklogs from JIRA
+ * if date range is given, it returns all worklogs within this range
+ * if date range is not given, it returns all worklogs of the date range defined in the project (database)
  * @param $request
  * @param $response
  * @param $args
- * @return mixed
+ * @return $response
  */
 function getWorklogsRoute($request, $response, $args) {
   if ($request->hasHeader('Authorization')) {
@@ -298,10 +306,11 @@ function getWorklogsRoute($request, $response, $args) {
 }
 
 /**
+ * Get all members of a project from JIRA
  * @param $request
  * @param $response
  * @param $args
- * @return mixed
+ * @return $response
  */
 function getProjectMemberRoute($request, $response, $args) {
   if ($request->hasHeader('Authorization')) {
@@ -321,10 +330,11 @@ function getProjectMemberRoute($request, $response, $args) {
 }
 
 /**
+ * Get resources data to build a graph
  * @param $request
  * @param $response
  * @param $args
- * @return mixed
+ * @return $response
  */
 function getProjectResourcesGraphRoute($request, $response, $args) {
   if ($request->hasHeader('Authorization')) {
@@ -392,10 +402,11 @@ function getProjectResourcesGraphRoute($request, $response, $args) {
 }
 
 /**
+ * Get efficiency data to build a graph
  * @param $request
  * @param $response
  * @param $args
- * @return mixed
+ * @return $response
  */
 function getProjectEfficiencyGraphRoute($request, $response, $args) {
   if ($request->hasHeader('Authorization')) {
@@ -451,10 +462,11 @@ function getProjectEfficiencyGraphRoute($request, $response, $args) {
 }
 
 /**
+ * Get team data to build a graph
  * @param $request
  * @param $response
  * @param $args
- * @return mixed
+ * @return $response
  */
 function getProjectTeamGraphRoute($request, $response, $args) {
   if ($request->hasHeader('Authorization')) {
@@ -506,6 +518,13 @@ function getProjectTeamGraphRoute($request, $response, $args) {
   }
 }
 
+/**
+ *
+ * @param $request
+ * @param $response
+ * @param $args
+ * @return $response
+ */
 function getProjectResourcesTableRoute($request, $response, $args){
   if ($request->hasHeader('Authorization')) {
     $cred = decodeUserCredentials($request);
@@ -594,7 +613,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
   /**
    * Builds a unauthorized 401 response
    * @param $response
-   * @return mixed
+   * @return $response
    */
   function unauthorized($response)
   {
@@ -602,8 +621,9 @@ function getProjectResourcesTableRoute($request, $response, $args){
   }
 
   /**
+   * JSON: Decode body
    * @param $request
-   * @return mixed
+   * @return {Object} body
    */
   function getJsonBody($request)
   {
@@ -614,7 +634,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * Builds the response with the output form the jira call
    * @param $response
    * @param $httpResponse
-   * @return mixed
+   * @return $response
    */
   function buildResponseFromJira($response, $httpResponse)
   {
@@ -636,7 +656,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
   /**
    * Finds the user with the given username in our database
    * @param $username
-   * @return mixed
+   * @return ArrayObject
    */
   function getUserByEmail($username)
   {
@@ -693,6 +713,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
   }
 
   /**
+   * HTTP Request to get all JIRA projects of a user
    * @param $key
    * @param $cred
    * @return \Httpful\Response
@@ -709,9 +730,10 @@ function getProjectResourcesTableRoute($request, $response, $args){
   }
 
   /**
+   * Get one project from database of a user
    * @param $key
    * @param $user
-   * @return mixed
+   * @return ArrayObject
    */
   function getProjectById($key, $user)
   {
@@ -723,9 +745,10 @@ function getProjectResourcesTableRoute($request, $response, $args){
     return $project;
   }
 
-  /*
+  /**
+   * Get all projects from database of a user
    * @param $user
-   * @return mixed
+   * @return ArrayObject
    */
   function getProjectsFromUser($user)
   {
@@ -738,6 +761,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
   }
 
   /**
+   * HTTP Request to get worklogs from JIRA
    * @param $key
    * @param $dateFrom
    * @param $dateTo
@@ -750,6 +774,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
   }
 
   /**
+   * Get all members of a project
    * @param $worklogs
    * @return array
    */
@@ -770,6 +795,11 @@ function getProjectResourcesTableRoute($request, $response, $args){
     return $result;
   }
 
+/**
+ * Parse Weeklogs into an array
+ * @param $worklogs
+ * @return array
+ */
   function parseWeeklogs($worklogs)
   {
     $mapFunctionWorklog = function ($log) {
@@ -779,6 +809,11 @@ function getProjectResourcesTableRoute($request, $response, $args){
     return array_map($mapFunctionWorklog, $worklogs);
   }
 
+/**
+ * Get labels of the weeks (e.g. 22/2016)
+ * @param $worklogs
+ * @return array
+ */
   function getWeekLabel($worklogs)
   {
     $mapFunctionWeeks = function ($item) {
