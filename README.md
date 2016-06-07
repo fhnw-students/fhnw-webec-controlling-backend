@@ -38,7 +38,7 @@ All request need following headers.
 | Accept        | application/json |
 | Authorization | Basic {token}    |
 
-## Login - _GET /login_
+## Login - _GET /auth/login_
 ### Request
 **Body**
 
@@ -200,8 +200,11 @@ Those Params are optional. If no param is given it will use the date range of th
 
 **401 - UNAUTHORIZED** Returend when the user credentials are incorrect
 
+# Tooling
+We use [Postman](http://www.getpostman.com/) to test our API;
 
-
+- [Collection](fhnw-jira.postman_collection)
+- [Environment](fhnw-w3tec-endpoint.postman_environment)
 
 
 
