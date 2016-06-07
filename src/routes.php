@@ -550,7 +550,6 @@ function getProjectResourcesTableRoute($request, $response, $args){
           }
         }
 
-
         //difference to planned weekly workload
         $member->difference = 0;
         for ($w = 0; $w < count($labels); $w++) {
@@ -563,13 +562,13 @@ function getProjectResourcesTableRoute($request, $response, $args){
         $member->difference = $member->hours - $max;
 
       }
-        print_r($members);
-        //print_r($max);
-
-
+      return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($members);
+    } else {
+      return unauthorized($response);
     }
+  } else {
+    return badRequest($response);
   }
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
