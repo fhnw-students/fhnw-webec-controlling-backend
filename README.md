@@ -85,7 +85,7 @@ All request need following headers.
 
 ## All JIRA Projects of the User - _GET /all/projects_
 ### Response
-**200 - OK** Returend if the user has access to JIRA. Contains ...
+**200 - OK** Returend if the user has access to JIRA. Contains all projects of the user
 
 ```
 {
@@ -108,7 +108,7 @@ All request need following headers.
 
 ## Get Project - _GET /projects_
 ### Response
-**200 - OK** Returend if the user has access to JIRA. Contains ...
+**200 - OK** Returend if the user has access to JIRA. Contains a specified project
 
 ```
 {
@@ -145,10 +145,162 @@ All request need following headers.
 **Body**
 
 ### Response
-**200 - OK** Returend if the user has access to JIRA. Contains ...
+**200 - OK** Returend if the user has access to JIRA. Contains the created project
 
 ```
 {
+  "uid": "1",
+  "pid": "BBVESDA",
+  "name": "name",
+  "weekload": "4",
+  "maxhours": "180",
+  "rangestart": "2015-12-01",
+  "rangeend": "2016-10-31",
+  "teamSize": "4",
+  "description": "description",
+  "jira": {
+    "expand": "description,lead,url,projectKeys",
+    "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416",
+    "id": "10416",
+    "key": "BBVESDA",
+    "description": "",
+    "lead": {
+      "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/user?username=john.example@students.fhnw.ch",
+      "key": "john.example@students.fhnw.ch",
+      "name": "john.example@students.fhnw.ch",
+      "avatarUrls": {
+        "16x16": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?size=xsmall&ownerId=john.example%40students.fhnw.ch&avatarId=11035",
+        "24x24": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?size=small&ownerId=john.example%40students.fhnw.ch&avatarId=11035",
+        "32x32": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?size=medium&ownerId=john.example%40students.fhnw.ch&avatarId=11035",
+        "48x48": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?ownerId=john.example%40students.fhnw.ch&avatarId=11035"
+      },
+      "displayName": "Example John (s)",
+      "active": true
+    },
+    "components": [
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/component/10412",
+        "id": "10412",
+        "name": "Project Mgmt",
+        "isAssigneeTypeValid": false
+      }
+    ],
+    "issueTypes": [
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/3",
+        "id": "3",
+        "description": "A task that needs to be done.",
+        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10318&avatarType=issuetype",
+        "name": "Task",
+        "subtask": false,
+        "avatarId": 10318
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/5",
+        "id": "5",
+        "description": "The sub-task of the issue",
+        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10316&avatarType=issuetype",
+        "name": "Sub-task",
+        "subtask": true,
+        "avatarId": 10316
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/1",
+        "id": "1",
+        "description": "A problem which impairs or prevents the functions of the product.",
+        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10303&avatarType=issuetype",
+        "name": "Bug",
+        "subtask": false,
+        "avatarId": 10303
+      }
+    ],
+    "assigneeType": "UNASSIGNED",
+    "versions": [
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10654",
+        "id": "10654",
+        "description": "Development - End of the project",
+        "name": "Iteration_4",
+        "archived": false,
+        "released": false,
+        "startDate": "2016-09-05",
+        "releaseDate": "2016-10-14",
+        "overdue": false,
+        "userStartDate": "05/Sep/16",
+        "userReleaseDate": "14/Oct/16",
+        "projectId": 10416
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10766",
+        "id": "10766",
+        "description": "Query B",
+        "name": "Iteration_3",
+        "archived": false,
+        "released": false,
+        "startDate": "2016-07-04",
+        "releaseDate": "2016-09-02",
+        "overdue": false,
+        "userStartDate": "04/Jul/16",
+        "userReleaseDate": "02/Sep/16",
+        "projectId": 10416
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10653",
+        "id": "10653",
+        "description": "Bug-Fixing",
+        "name": "Iteration_2",
+        "archived": false,
+        "released": false,
+        "startDate": "2016-06-06",
+        "releaseDate": "2016-07-03",
+        "overdue": false,
+        "userStartDate": "06/Jun/16",
+        "userReleaseDate": "03/Jul/16",
+        "projectId": 10416
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10652",
+        "id": "10652",
+        "description": "Refactoring",
+        "name": "Iteration_1",
+        "archived": false,
+        "released": true,
+        "startDate": "2016-03-28",
+        "releaseDate": "2016-06-05",
+        "userStartDate": "28/Mar/16",
+        "userReleaseDate": "05/Jun/16",
+        "projectId": 10416
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10767",
+        "id": "10767",
+        "description": "Requirements and Prototype",
+        "name": "Elaboration",
+        "archived": false,
+        "released": false,
+        "startDate": "2016-01-01",
+        "releaseDate": "2016-03-27",
+        "overdue": true,
+        "userStartDate": "01/Jan/16",
+        "userReleaseDate": "27/Mar/16",
+        "projectId": 10416
+      }
+    ],
+    "name": "IP-416bb_FlashCard2",
+    "roles": {
+      "Developers": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416/role/10001",
+      "Administrators": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416/role/10002",
+      "Users": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416/role/10000",
+      "Tempo Project Managers": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416/role/10100"
+    },
+    "avatarUrls": {
+      "48x48": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?pid=10416&avatarId=11063",
+      "24x24": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=small&pid=10416&avatarId=11063",
+      "16x16": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=xsmall&pid=10416&avatarId=11063",
+      "32x32": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=medium&pid=10416&avatarId=11063"
+    },
+    "projectTypeKey": "software"
+  }
 }
 ```
 
@@ -160,10 +312,159 @@ All request need following headers.
 **Body**
 
 ### Response
-**200 - OK** Returend if the user has access to JIRA. Contains ...
+**200 - OK** Returend if the user has access to JIRA. Contains the updated project
 
 ```
 {
+  "name": "test",
+  "weekload": "4",
+  "maxhours": "180",
+  "rangestart": "2015-12-01",
+  "rangeend": "2016-10-31",
+  "description": "description",
+  "jira": {
+    "expand": "description,lead,url,projectKeys",
+    "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416",
+    "id": "10416",
+    "key": "BBVESDA",
+    "description": "",
+    "lead": {
+      "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/user?username=john.example@students.fhnw.ch",
+      "key": "john.example@students.fhnw.ch",
+      "name": "john.example@students.fhnw.ch",
+      "avatarUrls": {
+        "16x16": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?size=xsmall&ownerId=john.example%40students.fhnw.ch&avatarId=11035",
+        "24x24": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?size=small&ownerId=john.example%40students.fhnw.ch&avatarId=11035",
+        "32x32": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?size=medium&ownerId=john.example%40students.fhnw.ch&avatarId=11035",
+        "48x48": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?ownerId=john.example%40students.fhnw.ch&avatarId=11035"
+      },
+      "displayName": "Example John (s)",
+      "active": true
+    },
+    "components": [
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/component/10412",
+        "id": "10412",
+        "name": "Project Mgmt",
+        "isAssigneeTypeValid": false
+      }
+    ],
+    "issueTypes": [
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/3",
+        "id": "3",
+        "description": "A task that needs to be done.",
+        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10318&avatarType=issuetype",
+        "name": "Task",
+        "subtask": false,
+        "avatarId": 10318
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/5",
+        "id": "5",
+        "description": "The sub-task of the issue",
+        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10316&avatarType=issuetype",
+        "name": "Sub-task",
+        "subtask": true,
+        "avatarId": 10316
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/1",
+        "id": "1",
+        "description": "A problem which impairs or prevents the functions of the product.",
+        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10303&avatarType=issuetype",
+        "name": "Bug",
+        "subtask": false,
+        "avatarId": 10303
+      }
+    ],
+    "assigneeType": "UNASSIGNED",
+    "versions": [
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10654",
+        "id": "10654",
+        "description": "Development - End of the project",
+        "name": "Iteration_4",
+        "archived": false,
+        "released": false,
+        "startDate": "2016-09-05",
+        "releaseDate": "2016-10-14",
+        "overdue": false,
+        "userStartDate": "05/Sep/16",
+        "userReleaseDate": "14/Oct/16",
+        "projectId": 10416
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10766",
+        "id": "10766",
+        "description": "Query B",
+        "name": "Iteration_3",
+        "archived": false,
+        "released": false,
+        "startDate": "2016-07-04",
+        "releaseDate": "2016-09-02",
+        "overdue": false,
+        "userStartDate": "04/Jul/16",
+        "userReleaseDate": "02/Sep/16",
+        "projectId": 10416
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10653",
+        "id": "10653",
+        "description": "Bug-Fixing",
+        "name": "Iteration_2",
+        "archived": false,
+        "released": false,
+        "startDate": "2016-06-06",
+        "releaseDate": "2016-07-03",
+        "overdue": false,
+        "userStartDate": "06/Jun/16",
+        "userReleaseDate": "03/Jul/16",
+        "projectId": 10416
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10652",
+        "id": "10652",
+        "description": "Refactoring",
+        "name": "Iteration_1",
+        "archived": false,
+        "released": true,
+        "startDate": "2016-03-28",
+        "releaseDate": "2016-06-05",
+        "userStartDate": "28/Mar/16",
+        "userReleaseDate": "05/Jun/16",
+        "projectId": 10416
+      },
+      {
+        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10767",
+        "id": "10767",
+        "description": "Requirements and Prototype",
+        "name": "Elaboration",
+        "archived": false,
+        "released": false,
+        "startDate": "2016-01-01",
+        "releaseDate": "2016-03-27",
+        "overdue": true,
+        "userStartDate": "01/Jan/16",
+        "userReleaseDate": "27/Mar/16",
+        "projectId": 10416
+      }
+    ],
+    "name": "IP-416bb_FlashCard2",
+    "roles": {
+      "Developers": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416/role/10001",
+      "Administrators": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416/role/10002",
+      "Users": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416/role/10000",
+      "Tempo Project Managers": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416/role/10100"
+    },
+    "avatarUrls": {
+          "48x48": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?pid=10416&avatarId=11063",
+          "24x24": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=small&pid=10416&avatarId=11063",
+          "16x16": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=xsmall&pid=10416&avatarId=11063",
+          "32x32": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=medium&pid=10416&avatarId=11063"
+        },
+        "projectTypeKey": "software"
+      }
 }
 ```
 
@@ -172,12 +473,7 @@ All request need following headers.
 
 ## Delete a Project - _DELETE /projects/{key}_
 ### Response
-**200 - OK** Returend if the user has access to JIRA. Contains ...
-
-```
-{
-}
-```
+**204 - No Content** Returend if the user has access to JIRA.
 
 **401 - UNAUTHORIZED** Returend when the user credentials are incorrect
 
@@ -191,12 +487,38 @@ Those Params are optional. If no param is given it will use the date range of th
 | dateFrom  	   | (date) - 2015-12-01 |
 | dateTo        | (date) - 2015-12-01 |
 
+
+### Response
+**200 - OK** Returend if the user has access to JIRA. Contains all worklogs of the specified project
+```
+{
+    "timeSpentSeconds": 7200,
+    "dateStarted": "2015-12-07T00:00:00.000",
+    "comment": "Preparation for the customer meeting",
+    "self": "https://www.cs.technik.fhnw.ch/jira/rest/tempo-timesheets/3/worklogs/16140",
+    "id": 16140,
+    "author": {
+      "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/user?username=john.example@students.fhnw.ch",
+      "name": "john.example@students.fhnw.ch",
+      "displayName": "Example John (s)",
+      "avatar": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?size=small&ownerId=john.example%40students.fhnw.ch&avatarId=11035"
+    }
+}
+```
+
+
 ## Get Members - _GET /projects/{key}/members
 ### Response
-**200 - OK** Returend if the user has access to JIRA. Contains ...
+**200 - OK** Returend if the user has access to JIRA. Contains all members of the project
 
 ```
 {
+  {
+    "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/user?username=john.example@students.fhnw.ch",
+    "name": "john.example@students.fhnw.ch",
+    "displayName": "Example John (s)",
+    "avatar": "https://www.cs.technik.fhnw.ch/jira/secure/useravatar?size=small&ownerId=john.example%40students.fhnw.ch&avatarId=11035"
+  }
 }
 ```
 
@@ -204,10 +526,37 @@ Those Params are optional. If no param is given it will use the date range of th
 
 ## Get Resource Graph Data - _GET /projects/{key}/resources/graph
 ### Response
-**200 - OK** Returend if the user has access to JIRA. Contains ...
+**200 - OK** Returend if the user has access to JIRA. Contains resources data for a graph
 
 ```
 {
+"labels": [
+    "50/2015",
+    "51/2015"
+  ],
+  "datasets": [
+    {
+      "label": "Example John (s)",
+      "data": [
+        4,
+        5
+      ]
+    },
+    {
+      "label": "Weekload",
+      "data": [
+        4,
+        8
+      ]
+    },
+    {
+      "label": "Target",
+      "data": [
+        180,
+        180
+      ]
+    }
+  ]
 }
 ```
 
@@ -215,10 +564,30 @@ Those Params are optional. If no param is given it will use the date range of th
 
 ## Get Efficiency Graph Data - _GET /projects/{key}/efficiency/graph
 ### Response
-**200 - OK** Returend if the user has access to JIRA. Contains ...
+**200 - OK** Returend if the user has access to JIRA. Contains efficiency data for a graph
 
 ```
 {
+"labels": [
+    "50/2015",
+    "51/2015"
+  ],
+  "datasets": [
+    {
+      "label": "Example John (s)",
+      "data": [
+        4,
+        1
+      ]
+    },
+    {
+      "label": "Weekload",
+      "data": [
+        4,
+        4
+      ]
+    }
+  ]
 }
 ```
 
@@ -226,10 +595,30 @@ Those Params are optional. If no param is given it will use the date range of th
 
 ## Get Team Graph Data - _GET /projects/{key}/team/graph
 ### Response
-**200 - OK** Returend if the user has access to JIRA. Contains ...
+**200 - OK** Returend if the user has access to JIRA. Contains team data for a graph
 
 ```
 {
+"labels": [
+    "50/2015",
+    "51/2015"
+  ],
+  "datasets": [
+    {
+      "label": "Planed",
+      "data": [
+        16,
+        32
+      ]
+    },
+    {
+      "label": "Real",
+      "data": [
+        12,
+        18
+      ]
+    }
+  ]
 }
 ```
 
