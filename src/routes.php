@@ -161,6 +161,12 @@ function createProjectRoute($request, $response) {
       $jiraHttpResponse = requestJiraProjects($cred, $data['pid']);
       if ($jiraHttpResponse->code == 200) {
         $jiraProject = $jiraHttpResponse->body;
+        // Swaps the dates if the range is negativ/invalid
+        if(date($data['rangeend']) < date($data['rangestart'])){
+          $tmp = $data['rangeend'];
+          $data['rangeend'] = $data['rangestart'];
+          $data['rangestart'] = $tmp;
+        }
         // Create project in the database
         $db = getDBConnection();
         $insert = $db->prepare('INSERT INTO projects (uid, pid, name, weekload, maxhours, rangestart, rangeend, teamSize, description) VALUES (:uid, :pid, :name, :weekload, :maxhours, :rangestart, :rangeend, :teamSize, :description)');
