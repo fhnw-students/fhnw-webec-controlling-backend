@@ -107,6 +107,16 @@ function getProjectsRoute($request, $response, $args) {
           }
         } else {
           $projects = getProjectsFromUser($user);
+          for($i=0; $i < count($projects); $i++){
+            $worklogHttpResponse = getWorklogs($projects[$i]['pid'], $projects[$i]['rangestart'], $projects[$i]['rangeend'], $cred);
+            $worklogs = $worklogHttpResponse->body;
+            $worklogs = parseWeeklogs($worklogs);
+            $real = 0;
+            for ($n = 0; $n < count($worklogs); $n++) {
+              $real += $worklogs[$n]['timeSpentSeconds'];
+            }
+            $projects[$i]['timeSpent'] = $real / 3600;
+          }
         }
         $output = concatJiraAndOurProjects($httpResponse->body, $projects, $args['pid']);
         return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($output);
