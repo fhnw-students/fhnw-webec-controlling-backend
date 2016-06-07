@@ -75,14 +75,28 @@ function getAllProjectsRoute($request, $response) {
     $user = getUserByEmail($cred['username']);
     if ($user) {
       $httpResponse = requestJiraProjects($cred);
-      $response = buildResponseFromJira($response, $httpResponse);
+      $allProjects = $httpResponse->body;
+      $projects = getProjectsFromUser($user);
+      $result = [];
+      for ($i=0; $i < count($allProjects); $i++) {
+        $ok = true;
+        for ($n=0; $n < count($projects); $n++) {
+          if($allProjects[$i]->key == $projects[$n]['pid']){
+            $ok = false;
+          }
+        }
+        if($ok == true){
+          array_push($result, $allProjects[$i]);
+        }
+      }
+      return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($result);
     } else {
       $response = unauthorized($response);
     }
   } else {
     $response = badRequest($response);
   }
-  return $response;
+  // return $response;
 }
 
 /**
