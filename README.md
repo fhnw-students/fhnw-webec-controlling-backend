@@ -89,6 +89,18 @@ All request need following headers.
 
 ```
 {
+    "expand": "description,lead,url,projectKeys",
+    "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416",
+    "id": "10416",
+    "key": "BBVESDA",
+    "name": "IP-416bb_FlashCard2",
+    "avatarUrls": {
+      "48x48": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?pid=10416&avatarId=11063",
+      "24x24": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=small&pid=10416&avatarId=11063",
+      "16x16": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=xsmall&pid=10416&avatarId=11063",
+      "32x32": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=medium&pid=10416&avatarId=11063"
+    },
+    "projectTypeKey": "software"
 }
 ```
 
@@ -100,6 +112,29 @@ All request need following headers.
 
 ```
 {
+   "uid": "1",
+   "pid": "BBVESDA",
+   "name": "Flashcard 2",
+   "weekload": "4",
+   "maxhours": "180",
+   "rangestart": "2015-12-01",
+   "rangeend": "2016-10-31",
+   "teamSize": "4",
+   "description": "description",
+   "jira": {
+     "expand": "description,lead,url,projectKeys",
+     "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/project/10416",
+     "id": "10416",
+     "key": "BBVESDA",
+     "name": "IP-416bb_FlashCard2",
+     "avatarUrls": {
+       "48x48": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?pid=10416&avatarId=11063",
+       "24x24": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=small&pid=10416&avatarId=11063",
+       "16x16": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=xsmall&pid=10416&avatarId=11063",
+       "32x32": "https://www.cs.technik.fhnw.ch/jira/secure/projectavatar?size=medium&pid=10416&avatarId=11063"
+     },
+     "projectTypeKey": "software"
+   }
 }
 ```
 
