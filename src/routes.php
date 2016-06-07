@@ -353,7 +353,7 @@ function getProjectResourcesGraphRoute($request, $response, $args) {
       $members = getProjectMembers($worklogs);
       // Gets labels
       $worklogs = parseWeeklogs($worklogs);
-      $labels = getWeekLabel($worklogs);
+      $labels = getWeekLabel($worklogs, $project['rangestart']);
 
       // builds datasets
       $datasets = array();
@@ -425,7 +425,7 @@ function getProjectEfficiencyGraphRoute($request, $response, $args) {
       $members = getProjectMembers($worklogs);
       // Gets labels
       $worklogs = parseWeeklogs($worklogs);
-      $labels = getWeekLabel($worklogs);
+      $labels = getWeekLabel($worklogs, $project['rangestart']);
 
       // builds datasets
       $datasets = array();
@@ -483,7 +483,7 @@ function getProjectTeamGraphRoute($request, $response, $args) {
       $httpResponse = getWorklogs($args['pid'], $project['rangestart'], $project['rangeend'], $cred);
       $worklogs = $httpResponse->body;
       $worklogs = parseWeeklogs($worklogs);
-      $labels = getWeekLabel($worklogs);
+      $labels = getWeekLabel($worklogs, $project['rangestart']);
       $datasets = array();
       $dataPlaned = array();
       $dataReal = array();
@@ -542,7 +542,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
       $members = getProjectMembers($worklogs);
       // Gets labels
       $worklogs = parseWeeklogs($worklogs);
-      $labels = getWeekLabel($worklogs);
+      $labels = getWeekLabel($worklogs, $project['rangestart']);
 
 
       for($i = 0; $i < count($members); $i++) {
@@ -805,8 +805,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
  * @param $worklogs
  * @return array
  */
-  function parseWeeklogs($worklogs)
-  {
+  function parseWeeklogs($worklogs) {
     $mapFunctionWorklog = function ($log) {
       $date = new DateTime($log->dateStarted);
       return array('id' => $log->id, 'timeSpentSeconds' => $log->timeSpentSeconds, 'dateStarted' => $log->dateStarted, 'displayName' => $log->author->displayName, 'name' => $log->author->name, 'year' => $date->format('Y'), 'week' => $date->format('W'));
@@ -819,12 +818,13 @@ function getProjectResourcesTableRoute($request, $response, $args){
  * @param $worklogs
  * @return array
  */
-  function getWeekLabel($worklogs)
-  {
-    $mapFunctionWeeks = function ($item) {
-      return $item['week'] . '/' . $item['year'];
-    };
-    $weeks = array_map($mapFunctionWeeks, $worklogs);
-    $weeks = array_unique($weeks, SORT_STRING);
+  function getWeekLabel($worklogs, $startDate) {
+    $pointerWeek = strtotime($startDate);
+    $endWeek = strtotime('now');
+    $weeks = array();
+    while($pointerWeek <= $endWeek){
+      array_push($weeks, date('W',$pointerWeek).'/'.date('Y',$pointerWeek));
+      $pointerWeek = strtotime("+7 day", $pointerWeek);
+    }
     return array_values($weeks);
   }
