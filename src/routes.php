@@ -567,8 +567,8 @@ function getProjectResourcesTableRoute($request, $response, $args){
         }
         $member->difference = $member->hours - $max;
 
-        //maximum planned workload
-        $member->maxWorkload = intval($project['maxhours']);
+        //relative workload: current workload in relation to maximum planned workload
+        $member->relWorkload =100*$member->hours/intval($project['maxhours']);
       }
 
 
