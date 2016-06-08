@@ -525,7 +525,7 @@ function getProjectTeamGraphRoute($request, $response, $args) {
 }
 
 /**
- *
+ * Get data (project member names, worked hours and the difference to the planned working hours) to build a table
  * @param $request
  * @param $response
  * @param $args
@@ -567,8 +567,12 @@ function getProjectResourcesTableRoute($request, $response, $args){
         }
         $member->difference = $member->hours - $max;
 
+        //maximum planned workload
+        $member->maxWorkload = intval($project['maxhours']);
       }
-      return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($members);
+
+
+     return $response->withStatus(200)->withHeader('Content-Type', 'application/json')->withJson($members);
     } else {
       return unauthorized($response);
     }
