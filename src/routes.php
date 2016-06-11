@@ -525,7 +525,9 @@ function getProjectTeamGraphRoute($request, $response, $args) {
 }
 
 /**
- * Get data (project member names, worked hours and the difference to the planned working hours) to build a table
+ * Get data (project member names, worked hours, the difference to the planned working
+ * hours and the consumption of resources ) to build a table
+ *
  * @param $request
  * @param $response
  * @param $args
