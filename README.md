@@ -9,8 +9,6 @@
 - Run `composer update`
 - Now start your webserver and enjoy our api
 
-# Our API
-
 # Data Structures
 
 ## User (object) _JIRA User_
@@ -194,24 +192,6 @@ All request need following headers.
         "name": "Task",
         "subtask": false,
         "avatarId": 10318
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/5",
-        "id": "5",
-        "description": "The sub-task of the issue",
-        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10316&avatarType=issuetype",
-        "name": "Sub-task",
-        "subtask": true,
-        "avatarId": 10316
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/1",
-        "id": "1",
-        "description": "A problem which impairs or prevents the functions of the product.",
-        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10303&avatarType=issuetype",
-        "name": "Bug",
-        "subtask": false,
-        "avatarId": 10303
       }
     ],
     "assigneeType": "UNASSIGNED",
@@ -228,61 +208,6 @@ All request need following headers.
         "overdue": false,
         "userStartDate": "05/Sep/16",
         "userReleaseDate": "14/Oct/16",
-        "projectId": 10416
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10766",
-        "id": "10766",
-        "description": "Query B",
-        "name": "Iteration_3",
-        "archived": false,
-        "released": false,
-        "startDate": "2016-07-04",
-        "releaseDate": "2016-09-02",
-        "overdue": false,
-        "userStartDate": "04/Jul/16",
-        "userReleaseDate": "02/Sep/16",
-        "projectId": 10416
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10653",
-        "id": "10653",
-        "description": "Bug-Fixing",
-        "name": "Iteration_2",
-        "archived": false,
-        "released": false,
-        "startDate": "2016-06-06",
-        "releaseDate": "2016-07-03",
-        "overdue": false,
-        "userStartDate": "06/Jun/16",
-        "userReleaseDate": "03/Jul/16",
-        "projectId": 10416
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10652",
-        "id": "10652",
-        "description": "Refactoring",
-        "name": "Iteration_1",
-        "archived": false,
-        "released": true,
-        "startDate": "2016-03-28",
-        "releaseDate": "2016-06-05",
-        "userStartDate": "28/Mar/16",
-        "userReleaseDate": "05/Jun/16",
-        "projectId": 10416
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10767",
-        "id": "10767",
-        "description": "Requirements and Prototype",
-        "name": "Elaboration",
-        "archived": false,
-        "released": false,
-        "startDate": "2016-01-01",
-        "releaseDate": "2016-03-27",
-        "overdue": true,
-        "userStartDate": "01/Jan/16",
-        "userReleaseDate": "27/Mar/16",
         "projectId": 10416
       }
     ],
@@ -358,24 +283,6 @@ All request need following headers.
         "name": "Task",
         "subtask": false,
         "avatarId": 10318
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/5",
-        "id": "5",
-        "description": "The sub-task of the issue",
-        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10316&avatarType=issuetype",
-        "name": "Sub-task",
-        "subtask": true,
-        "avatarId": 10316
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/issuetype/1",
-        "id": "1",
-        "description": "A problem which impairs or prevents the functions of the product.",
-        "iconUrl": "https://www.cs.technik.fhnw.ch/jira/secure/viewavatar?size=xsmall&avatarId=10303&avatarType=issuetype",
-        "name": "Bug",
-        "subtask": false,
-        "avatarId": 10303
       }
     ],
     "assigneeType": "UNASSIGNED",
@@ -392,61 +299,6 @@ All request need following headers.
         "overdue": false,
         "userStartDate": "05/Sep/16",
         "userReleaseDate": "14/Oct/16",
-        "projectId": 10416
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10766",
-        "id": "10766",
-        "description": "Query B",
-        "name": "Iteration_3",
-        "archived": false,
-        "released": false,
-        "startDate": "2016-07-04",
-        "releaseDate": "2016-09-02",
-        "overdue": false,
-        "userStartDate": "04/Jul/16",
-        "userReleaseDate": "02/Sep/16",
-        "projectId": 10416
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10653",
-        "id": "10653",
-        "description": "Bug-Fixing",
-        "name": "Iteration_2",
-        "archived": false,
-        "released": false,
-        "startDate": "2016-06-06",
-        "releaseDate": "2016-07-03",
-        "overdue": false,
-        "userStartDate": "06/Jun/16",
-        "userReleaseDate": "03/Jul/16",
-        "projectId": 10416
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10652",
-        "id": "10652",
-        "description": "Refactoring",
-        "name": "Iteration_1",
-        "archived": false,
-        "released": true,
-        "startDate": "2016-03-28",
-        "releaseDate": "2016-06-05",
-        "userStartDate": "28/Mar/16",
-        "userReleaseDate": "05/Jun/16",
-        "projectId": 10416
-      },
-      {
-        "self": "https://www.cs.technik.fhnw.ch/jira/rest/api/2/version/10767",
-        "id": "10767",
-        "description": "Requirements and Prototype",
-        "name": "Elaboration",
-        "archived": false,
-        "released": false,
-        "startDate": "2016-01-01",
-        "releaseDate": "2016-03-27",
-        "overdue": true,
-        "userStartDate": "01/Jan/16",
-        "userReleaseDate": "27/Mar/16",
         "projectId": 10416
       }
     ],

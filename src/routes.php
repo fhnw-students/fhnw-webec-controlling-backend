@@ -91,12 +91,11 @@ function getAllProjectsRoute($request, $response) {
       }
       return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($result);
     } else {
-      $response = unauthorized($response);
+      return unauthorized($response);
     }
   } else {
-    $response = badRequest($response);
+    return badRequest($response);
   }
-  // return $response;
 }
 
 /**
@@ -143,7 +142,6 @@ function getProjectsRoute($request, $response, $args) {
   } else {
     return badRequest($response);
   } // header check
-  return $response;
 }
 
 /**
@@ -589,8 +587,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
   /**
    * open database connection to the MySQL server
    */
-  function getDBConnection()
-  {
+  function getDBConnection(){
     $user = 'wtecch_fhnwWebec';
     $pwd = 'bUa&2QaU&5fa!2D';
     $connectionString = "mysql:host=194.126.200.46;dbname=wtecch_fhnwWebecJira";
@@ -606,8 +603,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $response
    * @return mixed
    */
-  function badRequest($response)
-  {
+  function badRequest($response){
     return $response->withStatus(400)->withHeader('Content-Type', 'text/html')->write('Bad Request');
   }
 
@@ -616,8 +612,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $response
    * @return mixed
    */
-  function notFound($response)
-  {
+  function notFound($response){
     return $response->withStatus(404)->withHeader('Content-Type', 'text/html')->write('Not Found');
   }
 
@@ -626,8 +621,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $response
    * @return $response
    */
-  function unauthorized($response)
-  {
+  function unauthorized($response){
     return $response->withStatus(401)->withHeader('Content-Type', 'text/html')->write('Unauthorized');
   }
 
@@ -636,8 +630,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $request
    * @return {Object} body
    */
-  function getJsonBody($request)
-  {
+  function getJsonBody($request){
     return json_decode($request->getBody(), true);
   }
 
@@ -647,8 +640,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $httpResponse
    * @return $response
    */
-  function buildResponseFromJira($response, $httpResponse)
-  {
+  function buildResponseFromJira($response, $httpResponse){
     return $response->withStatus($httpResponse->code)->withHeader('Content-Type', 'application/json')->withJson($httpResponse->body);
   }
 
@@ -657,8 +649,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $request
    * @return ArrayObject
    */
-  function decodeUserCredentials($request)
-  {
+  function decodeUserCredentials($request){
     $token = substr($request->getHeaderLine('Authorization'), 6);
     list($username, $password) = explode(':', base64_decode($token));
     return array("username" => $username, "password" => $password);
@@ -669,8 +660,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $username
    * @return ArrayObject
    */
-  function getUserByEmail($username)
-  {
+  function getUserByEmail($username){
     $db = getDBConnection();
     $selection = $db->prepare('SELECT * FROM users WHERE email = ?');
     $selection->execute(array($username));
@@ -682,8 +672,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * Creates a new user in our database
    * @param $username
    */
-  function createUser($username)
-  {
+  function createUser($username){
     $db = getDBConnection();
     $insert = $db->prepare('INSERT INTO users (email) VALUES (:email)');
     $insert->bindParam(':email', $username);
@@ -704,8 +693,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $key
    * @return array
    */
-  function concatJiraAndOurProjects($jiraProjects, $projects, $key)
-  {
+  function concatJiraAndOurProjects($jiraProjects, $projects, $key){
     if ($key) {
       $projects['jira'] = $jiraProjects;
       return $projects;
@@ -729,8 +717,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $cred
    * @return \Httpful\Response
    */
-  function requestJiraProjects($cred, $key)
-  {
+  function requestJiraProjects($cred, $key){
     //Gets all jira projects of the user
     $uri = BASE_URL . JIRA_ROUTE . '/project';
     if ($key) {
@@ -746,8 +733,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $user
    * @return ArrayObject
    */
-  function getProjectById($key, $user)
-  {
+  function getProjectById($key, $user){
     $db = getDBConnection();
     $selection = $db->prepare('SELECT * FROM projects WHERE uid = ? AND pid = ?');
     $selection->execute(array($user['uid'], $key));
@@ -761,8 +747,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $user
    * @return ArrayObject
    */
-  function getProjectsFromUser($user)
-  {
+  function getProjectsFromUser($user){
     $db = getDBConnection();
     $selection = $db->prepare('SELECT * FROM projects WHERE uid = ?');
     $selection->execute(array($user['uid']));
@@ -778,8 +763,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $dateTo
    * @return \Httpful\Response
    */
-  function getWorklogs($key, $dateFrom, $dateTo, $cred)
-  {
+  function getWorklogs($key, $dateFrom, $dateTo, $cred){
     $uri = BASE_URL . TEMPO_ROUTE . '?projectKey=' . $key . '&dateFrom=' . $dateFrom . '&dateTo=' . $dateTo;
     return \Httpful\Request::get($uri)->authenticateWith($cred['username'], $cred['password'])->send();
   }
@@ -789,8 +773,7 @@ function getProjectResourcesTableRoute($request, $response, $args){
    * @param $worklogs
    * @return array
    */
-  function getProjectMembers($worklogs)
-  {
+  function getProjectMembers($worklogs){
     $mapFunction = function ($item) {
       return $item->author;
     };
@@ -806,11 +789,11 @@ function getProjectResourcesTableRoute($request, $response, $args){
     return $result;
   }
 
-/**
- * Parse Weeklogs into an array
- * @param $worklogs
- * @return array
- */
+  /**
+  * Parse Weeklogs into an array
+  * @param $worklogs
+  * @return array
+  */
   function parseWeeklogs($worklogs) {
     $mapFunctionWorklog = function ($log) {
       $date = new DateTime($log->dateStarted);
@@ -819,11 +802,11 @@ function getProjectResourcesTableRoute($request, $response, $args){
     return array_map($mapFunctionWorklog, $worklogs);
   }
 
-/**
- * Get labels of the weeks (e.g. 22/2016)
- * @param $worklogs
- * @return array
- */
+  /**
+  * Get labels of the weeks (e.g. 22/2016)
+  * @param $worklogs
+  * @return array
+  */
   function getWeekLabel($worklogs, $startDate) {
     $pointerWeek = strtotime($startDate);
     $endWeek = strtotime('now');
